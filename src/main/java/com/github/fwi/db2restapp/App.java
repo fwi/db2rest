@@ -17,12 +17,6 @@ import com.github.fwi.db2rest.RestTableQueries;
 @EnableAutoConfiguration
 public class App {
 
-	// java11.bat
-	// mvn -B -q spring-boot:run -Dspring.config.location=file:./test-local/
-
-	// https://www.baeldung.com/postman-testing-collections
-	// https://www.getpostman.com/downloads/
-	
 	public static void main(String[] args) {
 		new SpringApplication(App.class).run(args);
 	}
