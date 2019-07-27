@@ -83,7 +83,7 @@ A complicated select (returns records that are not completed, created after a ce
 }]
 ```
 
-A simple update (set completd to false for record 3, update the description for record 4):
+A simple update (set completed to false for record 3, update the description for record 4):
 
 ```JSON
 [{
