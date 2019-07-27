@@ -1,0 +1,33 @@
+---
+# Configuration for running the app from the parent directory of ./test-local with the command
+# mvn -B -q spring-boot:run -Dspring.config.location=file:./test-local/
+
+server.port: 8082
+
+spring.datasource.platform: h2
+# h2 datasource is always intialized if schema-h2 is present
+# spring.datasource.initialization-mode=always
+
+spring.datasource.schema: file:./test-local/schema-h2.sql
+spring.datasource.data: file:./test-local/data-h2.sql
+
+# Don't match case for table- and column-names.
+# Enable query logs for transaction management
+# H2 config properties: http://www.h2database.com/javadoc/org/h2/engine/DbSettings.html 
+# and http://www.h2database.com/html/features.html#other_settings "Using the Trace Options"
+# Set level 1 to 5 (2 is info, 3 is debug).
+spring.datasource.jdbcUrl: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2'
+spring.datasource.url: ${spring.datasource.jdbcUrl} 
+# Enable console at /h2-console.
+spring.h2.console.enabled: true
+# Hikari config properties: https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby
+spring.datasource.hikari.minimumIdle: 1
+# Never re-create the last connection, that will erase the in-memory database.
+spring.datasource.hikari.maxLifetime: 0
+# Warn when connections are leaking.
+spring.datasource.hikari.leakDetectionThreshold: 5000
+spring.datasource.hikari.maximumPoolSize: 4
+
+spring.jackson.serialization.indent_output: true
+
+logging.config: file:./test-local/logback.xml

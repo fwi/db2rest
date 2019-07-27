@@ -1,0 +1,7 @@
+[{
+	"completed": true,
+	"rest2db_query_filters": [
+		{"column": "created", "op": ">=", "value": "2019-07-27T16:36:48.035+0000"},
+		{"column": "description", "op": "ilike", "value": "%laundry%"}
+	]
+}]
