@@ -57,13 +57,13 @@ The entire Spring Boot wiring for the "task" table comes down to the following c
 	}
 ```
 
-With the project running, open a second terminal in this project `test-local` directory
+With the project running, open a second terminal in this project's `test-local` directory
 and run the `curl` commands shown in [curl-cmds.txt](./test-local/curl-cmds.txt)
 
 The contents of the JSON-files in the `/test-local` directory
 should give an idea of the functions provided by the rest-interface:
 
-A simple select:
+A simple select (returns records with id 3 and 4):
 
 ```JSON
 [{
@@ -71,7 +71,7 @@ A simple select:
 }]
 ```
 
-A complicated select:
+A complicated select (returns records that are not completed, created after a certain date and with id 2, 4 or 6):
 
 ```JSON
 [{
@@ -83,7 +83,7 @@ A complicated select:
 }]
 ```
 
-A simple update:
+A simple update (set completd to false for record 3, update the description for record 4):
 
 ```JSON
 [{
@@ -96,7 +96,7 @@ A simple update:
 }]
 ```
 
-A complicated update:
+A complicated update (set completed to true for records created after a certain date and that contain "laundry" in the description):
 
 ```JSON
  [{
@@ -116,7 +116,7 @@ consider rolling your own (copy the good parts).
 If it did not take you a long time and you did not get lost in the source code,
 this might be a decent start for your own REST interface using plain JDBC.
 
-A final note on table- and  column-names (one of the hurdles on the way):
+A final note on table- and  column-names (one of the hurdles along the way):
 Postgresql converts unquoted names to lowercase,
 everybody else converts unquoted names to UPPERCASE.
 To prevent maintenance hell, always use lower\_case names with under\_scores.
