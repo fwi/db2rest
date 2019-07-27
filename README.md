@@ -28,7 +28,7 @@ In your browser go to
 
 For reference the demo-table "task":
 
-```lang=SQL
+```SQL
 CREATE TABLE task (
   id          identity,
   created     timestamp not null default CURRENT_TIMESTAMP,
@@ -40,7 +40,7 @@ CREATE TABLE task (
 The entire Spring Boot wiring for the "task" table comes down to the following configuration 
 (see [App.java](./src/main/java/com/github/fwi/db2restapp/App.java)):
 
-```lang=java
+```java
 	@Bean
 	public TableTask taskRestApi(RestDbResources restDbResources, ObjectMapper objectMapper) {
 		
@@ -65,7 +65,7 @@ should give an idea of the functions provided by the rest-interface:
 
 A simple select:
 
-```lang=json
+```JSON
 [{
 	"id": [3, 4]
 }]
@@ -73,7 +73,7 @@ A simple select:
 
 A complicated select:
 
-```lang=json
+```JSON
 [{
 	"rest2db_query_filters": [
 		{"column": "completed", "op": "=", "value": false},
@@ -85,7 +85,7 @@ A complicated select:
 
 A simple update:
 
-```
+```JSON
 [{
 	"id": 3,
 	"completed": false
@@ -98,7 +98,7 @@ A simple update:
 
 A complicated update:
 
-```lang=json
+```JSON
  [{
 	"completed": true,
 	"rest2db_query_filters": [
