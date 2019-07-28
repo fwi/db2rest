@@ -30,8 +30,8 @@ public class RestTableQueries {
 	public static final String DB_QUERY_PREFIX = "rest2db_query_";
 	// public static final String DB_QUERY_ORDER = DB_QUERY_PREFIX + "order";
 	public static final String DB_QUERY_FILTERS = DB_QUERY_PREFIX + "filters";
-	public static final String FILTER_OP = "op";
 	public static final String FILTER_COLUMN = "column";
+	public static final String FILTER_OP = "op";
 	public static final String FILTER_VALUE = "value";
 
 	public final String tableName;
@@ -386,6 +386,10 @@ public class RestTableQueries {
 		var ds = jdbcTemplate.getDataSource();
 		var con = DataSourceUtils.getConnection(ds);
 		var meta = new LinkedHashMap<String, Object>();
+		meta.put("columnnames", columnNames);
+		meta.put("readonlycolumns", selectOnlyColumns);
+		meta.put("columndefaults", insertDefaults);
+		meta.put("timestampcolumns", timestampColumns);
 		try {
 			meta.put("catalog", con.getCatalog());
 			meta.put("schema", con.getSchema());
