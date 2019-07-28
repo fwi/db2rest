@@ -19,55 +19,65 @@ public class RestTable implements InitializingBean {
 	private static final Logger log = LoggerFactory.getLogger(RestTable.class);
 
 	public final RestTableQueries tableQueries;
-	protected final boolean queryColumnTypesAtStartup;
+	protected final boolean queryColumnsAtStartup;
 
 	public RestTable(RestTableQueries tableQueries) {
-		this(tableQueries, tableQueries.timestampColumns.isEmpty());
+		this(tableQueries, true);
 	}
 
-	public RestTable(RestTableQueries tableQueries, boolean queryColumnTypesAtStartup) {
+	public RestTable(RestTableQueries tableQueries, boolean queryColumnsAtStartup) {
 		this.tableQueries = tableQueries;
-		this.queryColumnTypesAtStartup = queryColumnTypesAtStartup;
+		this.queryColumnsAtStartup = queryColumnsAtStartup;
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
 
-		if (!queryColumnTypesAtStartup) {
+		if (!queryColumnsAtStartup) {
 			return;
 		}
+		var columnNames = tableQueries.columnNames;
+		var queryColumnNames = columnNames.isEmpty();
 		var timestampColumns = tableQueries.timestampColumns;
-		if (timestampColumns.isEmpty()) {
+		var queryTimestamps = timestampColumns.isEmpty();
+		if (queryColumnNames || queryTimestamps) {
+			var meta = (Map<String, Object>) meta();
 			@SuppressWarnings("unchecked")
-			var meta = (List<Map<String, Object>>) meta();
-			@SuppressWarnings("unchecked")
-			var columns = (List<Map<String, Object>>) meta.get(0).get("columns");
+			var columns = (List<Map<String, Object>>) meta.get("columns");
 			for (var column : columns) {
-				if (((String) column.get("TYPE_NAME")).equalsIgnoreCase("TIMESTAMP")) {
+				if (queryColumnNames) {
+					columnNames.add((String) column.get("COLUMN_NAME"));
+				}
+				if (queryTimestamps && ((String) column.get("TYPE_NAME")).equalsIgnoreCase("TIMESTAMP")) {
 					timestampColumns.add((String) column.get("COLUMN_NAME"));
 				}
 			}
-			if (timestampColumns.size() > 0) {
-				log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
-						tableQueries.tableName, timestampColumns);
-			} else {
-				log.debug("Found no timestamp columns for table {}.", tableQueries.tableName);
+			if (queryColumnNames) {
+				if (columnNames.size() > 0) {
+					log.debug("Found {} columns for table {}. Columns: {}", columnNames.size(),
+							tableQueries.tableName, columnNames);
+				} else {
+					log.warn("Found no columns for table {}.", tableQueries.tableName);
+				}
+			}
+			if (queryTimestamps) {
+				if (timestampColumns.size() > 0) {
+					log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
+							tableQueries.tableName, timestampColumns);
+				} else {
+					log.debug("Found no timestamp columns for table {}.", tableQueries.tableName);
+				}
 			}
 		}
 	}
 
-	/*
-	 * Everything in this class that deals with tables communicates via a
-	 * List<Map<String, Object>>, both as input and as output.
-	 */
-
 	@GetMapping("/meta")
-	public List<?> meta() {
+	public Map<String, Object> meta() {
 		return tableQueries.meta();
 	}
 
 	@GetMapping("/select/all")
-	public List<?> selectAll() {
+	public List<Map<String, Object>> selectAll() {
 		return tableQueries.selectAll();
 	}
 
@@ -75,7 +85,7 @@ public class RestTable implements InitializingBean {
 	 * GET with a body is not always supported, allow POST as well.
 	 */
 	@RequestMapping(value = "/select", method = { RequestMethod.GET, RequestMethod.POST })
-	public List<?> select(@RequestBody(required = false) List<Map<String, Object>> records,
+	public List<Map<String, Object>> select(@RequestBody(required = false) List<Map<String, Object>> records,
 			@RequestParam(defaultValue = "0") int offset, @RequestParam(defaultValue = "0") int amount) {
 
 		return tableQueries.select(records, offset, amount);
@@ -85,27 +95,27 @@ public class RestTable implements InitializingBean {
 	 * Allow both PUT and POST methods for ease of use.
 	 */
 	@RequestMapping(value = "/insert", method = { RequestMethod.PUT, RequestMethod.POST })
-	public List<?> insert(@RequestBody List<Map<String, Object>> records) {
+	public List<Map<String, Object>> insert(@RequestBody List<Map<String, Object>> records) {
 		return tableQueries.insert(records);
 	}
 
 	@PostMapping("/update")
-	public List<?> update(@RequestBody List<Map<String, Object>> records) {
+	public int update(@RequestBody List<Map<String, Object>> records) {
 		return tableQueries.update(records);
 	}
 
 	@PostMapping("/update/all")
-	public List<?> updateAll(@RequestBody List<Map<String, Object>> records) {
+	public int updateAll(@RequestBody List<Map<String, Object>> records) {
 		return tableQueries.update(records, true);
 	}
 
 	@DeleteMapping("/delete/all")
-	public List<?> deleteAll() {
+	public int deleteAll() {
 		return tableQueries.deleteAll();
 	}
 
 	@RequestMapping(value = "/delete", method = { RequestMethod.DELETE, RequestMethod.POST })
-	public List<?> delete(@RequestBody List<Map<String, Object>> records) {
+	public int delete(@RequestBody List<Map<String, Object>> records) {
 		return tableQueries.delete(records);
 	}
 

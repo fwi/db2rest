@@ -2,7 +2,6 @@ package com.github.fwi.db2restapp;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,18 +19,18 @@ public class TableTask extends RestTable {
 	}
 
 	@GetMapping(value = { "", "/" })
-	List<?> home() {
-		return tableQueries.asList(tableQueries.tableName);
+	String home() {
+		return tableQueries.tableName;
 	}
 
 	@GetMapping("/time")
-	List<?> time() {
-		return tableQueries.asList(OffsetDateTime.now());
+	OffsetDateTime time() {
+		return OffsetDateTime.now();
 	}
 
 	@GetMapping("/time/utc")
-	List<?> timeUtc() {
-		return tableQueries.asList(OffsetDateTime.now(ZoneOffset.UTC));
+	OffsetDateTime timeUtc() {
+		return OffsetDateTime.now(ZoneOffset.UTC);
 	}
 
 }

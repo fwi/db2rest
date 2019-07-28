@@ -9,6 +9,7 @@ import java.util.Map;
 public class RestTableMeta {
 
 	public String tableName;
+	public Collection<String> columnNames;
 	public Collection<String> selectOnlyColumns;
 	public Collection<String> timestampColumns;
 	public Map<String, Object> insertDefaults;
@@ -24,6 +25,7 @@ public class RestTableMeta {
 	public static class Builder {
 
 		public String tableName;
+		public Collection<String> columnNames  = new HashSet<String>();
 		public Collection<String> selectOnlyColumns = new HashSet<String>();
 		public Collection<String> timestampColumns = new HashSet<String>();
 		public Map<String, Object> insertDefaults = new HashMap<String, Object>();
@@ -31,6 +33,16 @@ public class RestTableMeta {
 
 		public Builder(String tableName) {
 			this.tableName = tableName;
+		}
+
+		public Builder columnName(String columnName) {
+			columnNames.add(columnName);
+			return this;
+		}
+
+		public Builder columnNames(String... columnNames) {
+			Arrays.stream(columnNames).forEach(e -> this.columnNames.add(e));
+			return this;
 		}
 
 		public Builder selectOnlyColumn(String columnName) {
@@ -61,9 +73,10 @@ public class RestTableMeta {
 		public RestTableMeta build() {
 
 			RestTableMeta meta = new RestTableMeta();
-			meta.maxAmountDefault = maxAmountDefault;
-			meta.selectOnlyColumns = selectOnlyColumns;
 			meta.tableName = tableName;
+			meta.maxAmountDefault = maxAmountDefault;
+			meta.columnNames = columnNames;
+			meta.selectOnlyColumns = selectOnlyColumns;
 			meta.timestampColumns = timestampColumns;
 			meta.insertDefaults = insertDefaults;
 			return meta;

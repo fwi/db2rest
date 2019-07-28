@@ -36,6 +36,7 @@ public class RestTableQueries {
 
 	public final String tableName;
 	public final int maxAmountDefault;
+	public final Collection<String> columnNames;
 	public final Collection<String> selectOnlyColumns;
 	public final Collection<String> timestampColumns;
 	public final Map<String, Object> insertDefaults;
@@ -49,6 +50,7 @@ public class RestTableQueries {
 	public RestTableQueries(RestTableMeta meta, RestDbResources db, ObjectMapper objectMapper) {
 		this.tableName = meta.tableName;
 		this.maxAmountDefault = meta.maxAmountDefault;
+		this.columnNames = meta.columnNames;
 		this.selectOnlyColumns = meta.selectOnlyColumns;
 		this.timestampColumns = meta.timestampColumns;
 		this.insertDefaults = meta.insertDefaults;
@@ -59,19 +61,7 @@ public class RestTableQueries {
 		this.objectMapper = objectMapper;
 	}
 
-	/**
-	 * Everything in this class communicates via a List.
-	 */
-	public <T> List<T> asList(T o) {
-		return Collections.singletonList(o);
-	}
-
-	/*
-	 * Everything in this class that deals with tables communicates via a
-	 * List<Map<String, Object>>, both as input and as output.
-	 */
-
-	public List<?> insert(List<Map<String, Object>> records) {
+	public List<Map<String, Object>> insert(List<Map<String, Object>> records) {
 
 		// There is no reliable way to get generated values back when using a
 		// batch-update.
@@ -97,10 +87,10 @@ public class RestTableQueries {
 
 	public String insertQuery(List<String> columns) {
 
-		// Names do not have to be unquoted but be aware of the note in schema-h2.sql
+		// Names do not have to be quoted but be aware of the note in schema-h2.sql
 		// Use quotes for names anyway in case a name is a SQL-reserved word (e.g.
 		// "user").
-
+		vcolumns(columns);
 		StringBuilder sb = new StringBuilder("insert into ");
 		sb.append(quote(tableName)).append(" (");
 		for (var it = columns.iterator(); it.hasNext();) {
@@ -127,20 +117,43 @@ public class RestTableQueries {
 		return sb.toString();
 	}
 
-	public List<?> selectAll() {
-		return jdbcTemplate.queryForList("select * from " + quote(tableName));
+	/**
+	 * Verify column names to prevent sql-injection.
+	 */
+	public String vcolumn(String columnName) {
+
+		if (!columnNames.contains(columnName)) {
+			throw new BadRequestException("Unknown column name [" + columnName + "] for table " + tableName);
+		}
+		return columnName;
 	}
 
-	public List<?> select(List<Map<String, Object>> records) {
+	/**
+	 * Verify column names to prevent sql-injection.
+	 */
+	public <T extends Collection<String>> T vcolumns(T columnNames) {
+
+		if (!this.columnNames.containsAll(columnNames)) {
+			columnNames.removeAll(this.columnNames);
+			throw new BadRequestException("Unknown column name in collection " + columnNames);
+		}
+		return columnNames;
+	}
+
+	public List<Map<String, Object>> selectAll() {
+		return select(null);
+	}
+
+	public List<Map<String, Object>> select(List<Map<String, Object>> records) {
 		return select(records, 0, maxAmountDefault);
 	}
 
-	public List<?> select(List<Map<String, Object>> records, int offset, int amount) {
+	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int amount) {
 
 		if (records == null) {
 			records = Collections.singletonList(Collections.emptyMap());
 		}
-		if (amount == 0) {
+		if (amount <= 0) {
 			amount = maxAmountDefault;
 		}
 		var selected = new LinkedList<Map<String, Object>>();
@@ -197,7 +210,7 @@ public class RestTableQueries {
 			} else {
 				sb.append(" and ");
 			}
-			sb.append(quote(column));
+			sb.append(quote(vcolumn(column)));
 			if (params.get(column) instanceof Collection) {
 				sb.append(" in ( :").append(column).append(')');
 			} else {
@@ -242,7 +255,7 @@ public class RestTableQueries {
 			var filterColumnName = column + "_filter_" + f;
 			var op = (String) filter.get(FILTER_OP);
 			params.put(filterColumnName, filter.get(FILTER_VALUE));
-			sb.append(quote(column));
+			sb.append(quote(vcolumn(column)));
 			switch (op) {
 			case "=":
 			case ">":
@@ -281,11 +294,11 @@ public class RestTableQueries {
 		return query + " limit " + offset + "," + amount;
 	}
 
-	public List<?> update(List<Map<String, Object>> records) {
+	public int update(List<Map<String, Object>> records) {
 		return update(records, false);
 	}
 
-	public List<?> update(List<Map<String, Object>> records, boolean allowUpdateAll) {
+	public int update(List<Map<String, Object>> records, boolean allowUpdateAll) {
 
 		int updatedRows = transactionTemplate.execute((status) -> {
 			var updated = 0;
@@ -297,7 +310,7 @@ public class RestTableQueries {
 		});
 		// Note: re-using the records map to select updated records is not an option.
 		// The where-filters have scrambled the records.
-		return asList(updatedRows);
+		return updatedRows;
 	}
 
 	public String updateQuery(Map<String, Object> params, boolean allowUpdateAll) {
@@ -314,7 +327,7 @@ public class RestTableQueries {
 			} else {
 				sb.append(", ");
 			}
-			sb.append(quote(column)).append("= :").append(column);
+			sb.append(quote(vcolumn(column))).append("= :").append(column);
 		}
 		String whereQuery = null;
 		if (params.containsKey(DB_QUERY_FILTERS)) {
@@ -332,12 +345,12 @@ public class RestTableQueries {
 		return sb.toString();
 	}
 
-	public List<?> deleteAll() {
+	public int deleteAll() {
 		var deletedRows = jdbcTemplate.update("delete from " + quote(tableName));
-		return asList(deletedRows);
+		return deletedRows;
 	}
 
-	public List<?> delete(List<Map<String, Object>> records) {
+	public int delete(List<Map<String, Object>> records) {
 
 		int deletedRows = transactionTemplate.execute((status) -> {
 			var deleted = 0;
@@ -351,7 +364,7 @@ public class RestTableQueries {
 			}
 			return deleted;
 		});
-		return asList(deletedRows);
+		return deletedRows;
 	}
 
 	public String deleteQuery(Map<String, Object> params) {
@@ -366,7 +379,7 @@ public class RestTableQueries {
 		return sb.toString();
 	}
 
-	public List<?> meta() {
+	public Map<String, Object> meta() {
 
 		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
 		// to re-use existing connection.
@@ -395,7 +408,7 @@ public class RestTableQueries {
 		} finally {
 			DataSourceUtils.releaseConnection(con, ds);
 		}
-		return asList(meta);
+		return meta;
 	}
 
 }

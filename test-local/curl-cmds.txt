@@ -11,8 +11,9 @@ curl -sSi -d@select-filter.json -H "Content-Type: application/json" http://local
 curl -sSi -d@update-one.json -H "Content-Type: application/json" http://localhost:8082/task/update
 curl -sSi -d@update-two.json -H "Content-Type: application/json" http://localhost:8082/task/update
 curl -sSi -d@update-where-filter.json -H "Content-Type: application/json" http://localhost:8082/task/update
-curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select/all
+curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select
 
 curl -sSi -X DELETE -d@delete-completed.json -H "Content-Type: application/json" http://localhost:8082/task/delete
+curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select
 
 curl -sSi -X DELETE -H "Content-Type: application/json" http://localhost:8082/task/delete/all
