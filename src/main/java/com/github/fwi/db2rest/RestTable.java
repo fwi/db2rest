@@ -41,9 +41,8 @@ public class RestTable implements InitializingBean {
 		var timestampColumns = tableQueries.timestampColumns;
 		var queryTimestamps = timestampColumns.isEmpty();
 		if (queryColumnNames || queryTimestamps) {
-			var meta = (Map<String, Object>) meta();
 			@SuppressWarnings("unchecked")
-			var columns = (List<Map<String, Object>>) meta.get("columns");
+			var columns = (List<Map<String, Object>>) meta().get("columns");
 			for (var column : columns) {
 				if (queryColumnNames) {
 					columnNames.add((String) column.get("COLUMN_NAME"));
