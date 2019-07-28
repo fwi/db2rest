@@ -6,11 +6,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 public class RestDbResources {
 
-    public final JdbcTemplate jdbcTemplate;
+	public final JdbcTemplate jdbcTemplate;
 
-    public final NamedParameterJdbcTemplate namedJdbcTemplate;
+	public final NamedParameterJdbcTemplate namedJdbcTemplate;
 
-    public final TransactionTemplate transactionTemplate;
+	public final TransactionTemplate transactionTemplate;
 
 	public RestDbResources(
 			JdbcTemplate jdbcTemplate, 

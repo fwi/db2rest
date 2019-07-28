@@ -34,11 +34,11 @@ public class App {
 		
 		var tableMeta = RestTableMeta.builder("task")
 				// these columns can never be updated but can be used for selection of a record to update
-				.addSelectOnlyColumns("id", "created", "modified")
+				.selectOnlyColumns("id", "created", "modified")
 				// an insert without the "completed" column gets this default value 
-				.addInsertDefault("completed", false)
+				.insertDefault("completed", false)
 				// timestamp-columns are auto-discovered in RestTable.afterPropertiesSet()
-				// .addTimestampColumns("created", "modified")
+				// .timestampColumns("created", "modified")
 				.build();
 		return new TableTask(
 				new RestTableQueries(tableMeta, restDbResources, objectMapper));

@@ -14,24 +14,24 @@ import com.github.fwi.db2rest.RestTableQueries;
 @RestController
 @RequestMapping("/task")
 public class TableTask extends RestTable {
-	
+
 	public TableTask(RestTableQueries tableQueries) {
 		super(tableQueries);
 	}
 
-    @GetMapping(value = {"", "/"})
-    List<?> home() {
-        return tableQueries.asList(tableQueries.tableName);
-    }
+	@GetMapping(value = { "", "/" })
+	List<?> home() {
+		return tableQueries.asList(tableQueries.tableName);
+	}
 
-    @GetMapping("/time")
-    List<?> time() {
-        return tableQueries.asList(OffsetDateTime.now());
-    }
+	@GetMapping("/time")
+	List<?> time() {
+		return tableQueries.asList(OffsetDateTime.now());
+	}
 
-    @GetMapping("/time/utc")
-    List<?> timeUtc() {
-        return tableQueries.asList(OffsetDateTime.now(ZoneOffset.UTC));
-    }
+	@GetMapping("/time/utc")
+	List<?> timeUtc() {
+		return tableQueries.asList(OffsetDateTime.now(ZoneOffset.UTC));
+	}
 
 }

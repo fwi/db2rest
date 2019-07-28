@@ -19,7 +19,7 @@ public class RestTable implements InitializingBean {
 	private static final Logger log = LoggerFactory.getLogger(RestTable.class);
 
 	public final RestTableQueries tableQueries;
-    protected final boolean queryColumnTypesAtStartup;
+	protected final boolean queryColumnTypesAtStartup;
 
 	public RestTable(RestTableQueries tableQueries) {
 		this(tableQueries, tableQueries.timestampColumns.isEmpty());
@@ -48,68 +48,65 @@ public class RestTable implements InitializingBean {
 				}
 			}
 			if (timestampColumns.size() > 0) {
-				log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(), tableQueries.tableName, timestampColumns);
+				log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
+						tableQueries.tableName, timestampColumns);
 			} else {
 				log.debug("Found no timestamp columns for table {}.", tableQueries.tableName);
 			}
 		}
 	}
 
-    /*
-     * Everything in this class that deals with tables
-     * communicates via a List<Map<String, Object>>,
-     * both as input and as output.
-     */
+	/*
+	 * Everything in this class that deals with tables communicates via a
+	 * List<Map<String, Object>>, both as input and as output.
+	 */
 
-    @GetMapping("/meta")
-    public List<?> meta() {
-    	return tableQueries.meta();
-    }
+	@GetMapping("/meta")
+	public List<?> meta() {
+		return tableQueries.meta();
+	}
 
-    @GetMapping("/select/all")
-    public List<?> selectAll() {
-    	return tableQueries.selectAll();
-    }
+	@GetMapping("/select/all")
+	public List<?> selectAll() {
+		return tableQueries.selectAll();
+	}
 
-    /*
-     * GET with a body is not always supported, allow POST as well.
-     */
-    @RequestMapping(value = "/select", method = {RequestMethod.GET, RequestMethod.POST})
-    public List<?> select(
-            @RequestBody(required = false) List<Map<String, Object>> records,
-            @RequestParam(defaultValue = "0") int offset,
-            @RequestParam(defaultValue = "0") int amount
-            ) {
+	/*
+	 * GET with a body is not always supported, allow POST as well.
+	 */
+	@RequestMapping(value = "/select", method = { RequestMethod.GET, RequestMethod.POST })
+	public List<?> select(@RequestBody(required = false) List<Map<String, Object>> records,
+			@RequestParam(defaultValue = "0") int offset, @RequestParam(defaultValue = "0") int amount) {
 
-        return tableQueries.select(records, offset, amount);
-    }
+		return tableQueries.select(records, offset, amount);
+	}
 
-    /*
-     * Allow both PUT and POST methods for ease of use.
-     */
-    @RequestMapping(value = "/insert", method = {RequestMethod.PUT, RequestMethod.POST})
-    public List<?> insert(@RequestBody List<Map<String, Object>> records) {
-    	return tableQueries.insert(records);
-    }
-    
-    @PostMapping("/update")
-    public List<?> update(@RequestBody List<Map<String, Object>> records) {
-    	return tableQueries.update(records);
-    }
+	/*
+	 * Allow both PUT and POST methods for ease of use.
+	 */
+	@RequestMapping(value = "/insert", method = { RequestMethod.PUT, RequestMethod.POST })
+	public List<?> insert(@RequestBody List<Map<String, Object>> records) {
+		return tableQueries.insert(records);
+	}
 
-    @PostMapping("/update/all")
-    public List<?> updateAll(@RequestBody List<Map<String, Object>> records) {
-    	return tableQueries.update(records, true);
-    }
+	@PostMapping("/update")
+	public List<?> update(@RequestBody List<Map<String, Object>> records) {
+		return tableQueries.update(records);
+	}
 
-    @DeleteMapping("/delete/all")
-    public List<?> deleteAll() {
-    	return tableQueries.deleteAll();
-    }
+	@PostMapping("/update/all")
+	public List<?> updateAll(@RequestBody List<Map<String, Object>> records) {
+		return tableQueries.update(records, true);
+	}
 
-    @RequestMapping(value = "/delete", method = {RequestMethod.DELETE, RequestMethod.POST})
-    public List<?> delete(@RequestBody List<Map<String, Object>> records) {
-    	return tableQueries.delete(records);
-    }
+	@DeleteMapping("/delete/all")
+	public List<?> deleteAll() {
+		return tableQueries.deleteAll();
+	}
+
+	@RequestMapping(value = "/delete", method = { RequestMethod.DELETE, RequestMethod.POST })
+	public List<?> delete(@RequestBody List<Map<String, Object>> records) {
+		return tableQueries.delete(records);
+	}
 
 }

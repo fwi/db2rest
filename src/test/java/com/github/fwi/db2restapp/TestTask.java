@@ -15,12 +15,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = App.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 public class TestTask {
-	
+
 	final Logger log = LoggerFactory.getLogger(TestTask.class);
 
 	@Autowired
 	private TestRestTemplate restTemplate;
-	
+
 	@Test
 	public void testSelect() {
 		var s = restTemplate.getForObject("/task", String.class);
