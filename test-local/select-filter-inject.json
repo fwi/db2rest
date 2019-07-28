@@ -1,0 +1,5 @@
+[{
+	"rest2db_query_filters": [
+		{"column": "description", "op": "ilike", "value": "' OR '1'='1' --"}
+	]
+}]
