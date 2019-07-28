@@ -30,4 +30,5 @@ spring.datasource.hikari.maximumPoolSize: 4
 
 spring.jackson.serialization.indent_output: true
 
+spring.output.ansi.enabled: always
 logging.config: file:./test-local/logback.xml
