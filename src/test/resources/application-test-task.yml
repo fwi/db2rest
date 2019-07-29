@@ -8,6 +8,9 @@ spring.datasource.platform: h2
 # h2 datasource is always intialized if schema-h2 is present
 # spring.datasource.initialization-mode: always
 
+spring.datasource.schema: classpath:schema-test-task-h2.sql
+spring.datasource.data: classpath:data-test-task-h2.sql
+
 # Don't match case for table- and column-names.
 # Enable query logs for transaction management
 # H2 config properties: http://www.h2database.com/javadoc/org/h2/engine/DbSettings.html 
