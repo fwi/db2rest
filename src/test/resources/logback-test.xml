@@ -6,4 +6,6 @@
         <appender-ref ref="CONSOLE"/>
     </root>
     <logger name="com.github.fwi.db2rest" level="debug"/>
+    <!-- set jdbc.core to trace or debug to see queries -->
+    <logger name="org.springframework.jdbc.core" level="trace"/>
 </configuration>

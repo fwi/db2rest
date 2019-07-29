@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class RestTableQueries {
 
-	@SuppressWarnings("unused")
 	private static final Logger log = LoggerFactory.getLogger(RestTableQueries.class);
 
 	public static final String DB_QUERY_PREFIX = "rest2db_query_";
@@ -34,6 +33,7 @@ public class RestTableQueries {
 	public static final String FILTER_OP = "op";
 	public static final String FILTER_VALUE = "value";
 
+	public final String schema;
 	public final String tableName;
 	public final int maxAmountDefault;
 	public final Collection<String> columnNames;
@@ -48,6 +48,7 @@ public class RestTableQueries {
 	public final ObjectMapper objectMapper;
 
 	public RestTableQueries(RestTableMeta meta, RestDbResources db, ObjectMapper objectMapper) {
+		this.schema = meta.schema;
 		this.tableName = meta.tableName;
 		this.maxAmountDefault = meta.maxAmountDefault;
 		this.columnNames = meta.columnNames;
@@ -92,7 +93,7 @@ public class RestTableQueries {
 		// "user").
 		vcolumns(columns);
 		StringBuilder sb = new StringBuilder("insert into ");
-		sb.append(quote(tableName)).append(" (");
+		sb.append(quotedTable()).append(" (");
 		for (var it = columns.iterator(); it.hasNext();) {
 			var column = it.next();
 			if (selectOnlyColumns.contains(column)) {
@@ -115,6 +116,10 @@ public class RestTableQueries {
 			}
 		}
 		return sb.toString();
+	}
+
+	public String quotedTable() {
+		return (schema == null ? quote(tableName) : quote(schema) + "." + quote(tableName));
 	}
 
 	/**
@@ -171,7 +176,7 @@ public class RestTableQueries {
 	public String selectQuery(Collection<String> selectionKeys, Map<String, Object> params) {
 
 		StringBuilder sb = new StringBuilder("select * from ");
-		sb.append(quote(tableName)).append(where(selectionKeys, params));
+		sb.append(quotedTable()).append(where(selectionKeys, params));
 		return sb.toString();
 	}
 
@@ -291,7 +296,9 @@ public class RestTableQueries {
 	}
 
 	public String limit(String query, int offset, int amount) {
-		return query + " limit " + offset + "," + amount;
+		// "limit 0,1000" does not work for postgres.
+		// use longer version "limit 1000 offset 0".
+		return query + " limit " + amount + " offset " + offset;
 	}
 
 	public int update(List<Map<String, Object>> records) {
@@ -316,7 +323,7 @@ public class RestTableQueries {
 	public String updateQuery(Map<String, Object> params, boolean allowUpdateAll) {
 
 		StringBuilder sb = new StringBuilder("update ");
-		sb.append(quote(tableName)).append(" set ");
+		sb.append(quotedTable()).append(" set ");
 		boolean first = true;
 		for (var column : params.keySet()) {
 			if (selectOnlyColumns.contains(column) || column.startsWith(DB_QUERY_PREFIX)) {
@@ -346,7 +353,7 @@ public class RestTableQueries {
 	}
 
 	public int deleteAll() {
-		var deletedRows = jdbcTemplate.update("delete from " + quote(tableName));
+		var deletedRows = jdbcTemplate.update("delete from " + quotedTable());
 		return deletedRows;
 	}
 
@@ -370,7 +377,7 @@ public class RestTableQueries {
 	public String deleteQuery(Map<String, Object> params) {
 
 		StringBuilder sb = new StringBuilder("delete from ");
-		sb.append(quote(tableName));
+		sb.append(quotedTable());
 		String whereQuery = where(params.keySet(), params);
 		if (StringUtils.isBlank(whereQuery)) {
 			throw new BadRequestException("Delete query requires selection values for a where-clause.");
@@ -383,21 +390,28 @@ public class RestTableQueries {
 
 		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
 		// to re-use existing connection.
-		var ds = jdbcTemplate.getDataSource();
-		var con = DataSourceUtils.getConnection(ds);
 		var meta = new LinkedHashMap<String, Object>();
 		meta.put("columnnames", columnNames);
 		meta.put("readonlycolumns", selectOnlyColumns);
 		meta.put("columndefaults", insertDefaults);
 		meta.put("timestampcolumns", timestampColumns);
+		String conSchema = null;
+		boolean conSchemaUpdated = false;
+		var ds = jdbcTemplate.getDataSource();
+		var con = DataSourceUtils.getConnection(ds);
 		try {
 			meta.put("catalog", con.getCatalog());
-			meta.put("schema", con.getSchema());
+			conSchema = con.getSchema();
+			if (schema != null && !schema.equals(conSchema)) {
+				con.setSchema(schema);
+				conSchemaUpdated = true;
+			}
+			meta.put("schema", schema);
 			var metaColumns = new LinkedList<Map<String, Object>>();
 			var metaData = con.getMetaData();
 			meta.put("username", metaData.getUserName());
 			meta.put("columns", metaColumns);
-			try (var columns = metaData.getColumns(null, null, tableName, "%")) {
+			try (var columns = metaData.getColumns(null, schema, tableName, "%")) {
 				var rowMeta = columns.getMetaData();
 				while (columns.next()) {
 					var column = new HashMap<String, Object>();
@@ -410,6 +424,13 @@ public class RestTableQueries {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		} finally {
+			if (conSchemaUpdated) {
+				try {
+					con.setSchema(conSchema);
+				} catch (Exception e) {
+					log.warn("Failed to reset connection schema back from " + schema + " to " + conSchema);
+				}
+			}
 			DataSourceUtils.releaseConnection(con, ds);
 		}
 		return meta;

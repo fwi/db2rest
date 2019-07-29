@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class RestTableMeta {
 
+	public String schema;
 	public String tableName;
 	public Collection<String> columnNames;
 	public Collection<String> selectOnlyColumns;
@@ -19,11 +20,16 @@ public class RestTableMeta {
 	}
 
 	public static RestTableMeta.Builder builder(String tableName) {
-		return new RestTableMeta.Builder(tableName);
+		return builder(null, tableName);
+	}
+
+	public static RestTableMeta.Builder builder(String schema, String tableName) {
+		return new RestTableMeta.Builder(schema, tableName);
 	}
 
 	public static class Builder {
 
+		public String schema;
 		public String tableName;
 		public Collection<String> columnNames  = new HashSet<String>();
 		public Collection<String> selectOnlyColumns = new HashSet<String>();
@@ -32,6 +38,11 @@ public class RestTableMeta {
 		public int maxAmountDefault = 1000;
 
 		public Builder(String tableName) {
+			this(null, tableName);
+		}
+
+		public Builder(String schema, String tableName) {
+			this.schema = schema;
 			this.tableName = tableName;
 		}
 
@@ -73,6 +84,7 @@ public class RestTableMeta {
 		public RestTableMeta build() {
 
 			RestTableMeta meta = new RestTableMeta();
+			meta.schema = schema;
 			meta.tableName = tableName;
 			meta.maxAmountDefault = maxAmountDefault;
 			meta.columnNames = columnNames;

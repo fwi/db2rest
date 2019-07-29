@@ -4,17 +4,20 @@ server.port: 8082
 spring.jackson.serialization.indent_output: true
 
 spring.datasource.platform: h2
+
 # h2 datasource is always intialized if schema-h2 is present
-# spring.datasource.initialize: true
+# spring.datasource.initialization-mode: always
+
 # Don't match case for table- and column-names.
 # Enable query logs for transaction management
 # H2 config properties: http://www.h2database.com/javadoc/org/h2/engine/DbSettings.html 
 # and http://www.h2database.com/html/features.html#other_settings "Using the Trace Options"
 # Set level 1 to 5 (2 is info, 3 is debug).
-spring.datasource.jdbcUrl: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2'
-spring.datasource.url: ${spring.datasource.jdbcUrl} 
+spring.datasource.url: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2' 
+
 # Enable console at /h2-console
 spring.h2.console.enabled: true
+
 # Hikari config properties: https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby
 spring.datasource.hikari.minimumIdle: 1
 spring.datasource.hikari.maximumPoolSize: 4
