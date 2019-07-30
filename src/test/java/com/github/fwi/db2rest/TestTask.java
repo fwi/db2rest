@@ -15,9 +15,9 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,10 +28,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fwi.db2rest.RestDbResources;
 import com.github.fwi.db2rest.RestTableMeta;
 import com.github.fwi.db2rest.RestTableQueries;
+import com.github.fwi.db2restapp.AppTableMappings;
 import com.github.fwi.db2restapp.TableTask;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = TestTask.TestTaskConfig.class, webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@Import(TestTask.TestTaskConfig.class)
 @ActiveProfiles("test-task")
 public class TestTask {
 
@@ -46,6 +48,12 @@ public class TestTask {
 	@Test
 	public void testSelect() throws Exception {
 		
+		var t = restTemplate.getForObject("/db2rest", String.class);
+		var tdata = getData(mapper.readValue(t, Map.class));
+		// most interesting to test is /task/select/{column}/{value}
+		// but to lazy to do it here.
+		assertTrue(tdata.size() > 0);
+		
 		var s = restTemplate.getForObject("/task", String.class);
 		log.debug("Response: {}", s);
 		assertEquals(s, restTemplate.getForObject("/task/", String.class));
@@ -59,13 +67,13 @@ public class TestTask {
 
 		var one = restTemplate.getForObject("/task/select/id/1", String.class);
 		log.debug("Response: {}", one);
-		var records = castListMap(mapper.readValue(one, List.class));
+		var records = getData(mapper.readValue(one, Map.class));
 		var desc = records.get(0).get("description");
 		assertTrue(desc.equals("mop the floor"));
 
 		var completed = restTemplate.getForObject("/task/select/completed/false?type=switch", String.class);
 		log.debug("Response: {}", completed);
-		records = castListMap(mapper.readValue(completed, List.class));
+		records = getData(mapper.readValue(completed, Map.class));
 		var id = records.get(0).get("id");
 		assertTrue( (int)id == 2);
 	}
@@ -85,7 +93,11 @@ public class TestTask {
 		return (List<Map<String, Object>>) o;
 	}
 	
-	@TestConfiguration
+	@SuppressWarnings("unchecked")
+	List<Map<String, Object>> getData(Object o) {
+		return (List<Map<String, Object>>)((Map<String, Object>) o).get(RestTableQueries.DATA_KEY);
+	}
+	
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	static class TestTaskConfig {
@@ -107,6 +119,11 @@ public class TestTask {
 					.build();
 			return new TableTask(
 					new RestTableQueries(tableMeta, restDbResources, objectMapper));
+		}
+		
+		@Bean
+		public AppTableMappings appTableMappings() {
+			return new AppTableMappings();
 		}
 
 	}

@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.github.fwi.db2rest.RestTable;
 import com.github.fwi.db2rest.RestTableQueries;
+import com.github.fwi.db2rest.RestTableWrite;
 
 @RestController
 @RequestMapping("/task")
-public class TableTask extends RestTable {
+public class TableTask extends RestTableWrite {
 
 	public TableTask(RestTableQueries tableQueries) {
 		super(tableQueries);

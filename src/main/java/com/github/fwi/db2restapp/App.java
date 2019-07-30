@@ -43,5 +43,10 @@ public class App {
 		return new TableTask(
 				new RestTableQueries(tableMeta, restDbResources, objectMapper));
 	}
+	
+	@Bean
+	public AppTableMappings appTableMappings() {
+		return new AppTableMappings();
+	}
 
 }

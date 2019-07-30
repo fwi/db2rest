@@ -22,6 +22,7 @@ Run this project from the project's root with the command:
 
 In your browser go to
 
+- http://localhost:8082/db2rest (overview of endpoints)
 - http://localhost:8082/task/time
 - http://localhost:8082/task/meta
 - http://localhost:8082/task/select/all

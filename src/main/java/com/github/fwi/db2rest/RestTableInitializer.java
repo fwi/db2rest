@@ -53,16 +53,12 @@ public class RestTableInitializer implements InitializingBean {
 					log.debug("Found {} columns for table {}. Columns: {}", columnNames.size(), tableQueries.quotedTable(),
 							columnNames);
 				} else {
-					log.warn("Found no columns for table {}.", tableQueries.quotedTable());
+					throw new RuntimeException("Found no columns for table " + tableQueries.quotedTable());
 				}
 			}
-			if (queryTimestamps) {
-				if (timestampColumns.size() > 0) {
-					log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
-							tableQueries.quotedTable(), timestampColumns);
-				} else {
-					log.debug("Found no timestamp columns for table {}.", tableQueries.quotedTable());
-				}
+			if (queryTimestamps && timestampColumns.size() > 0) {
+				log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
+						tableQueries.quotedTable(), timestampColumns);
 			}
 		}
 	}

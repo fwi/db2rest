@@ -16,6 +16,7 @@ spring.datasource.data: classpath:data-test-task-h2.sql
 # H2 config properties: http://www.h2database.com/javadoc/org/h2/engine/DbSettings.html 
 # and http://www.h2database.com/html/features.html#other_settings "Using the Trace Options"
 # Set level 1 to 5 (2 is info, 3 is debug).
+
 spring.datasource.url: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2' 
 
 # Enable console at /h2-console

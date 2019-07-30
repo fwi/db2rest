@@ -2,9 +2,11 @@ package com.github.fwi.db2rest;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +28,8 @@ public class RestTableQueries {
 
 	private static final Logger log = LoggerFactory.getLogger(RestTableQueries.class);
 
+	public static final String DATA_KEY = "data";
+	
 	public static final String DB_QUERY_PREFIX = "rest2db_query_";
 	// public static final String DB_QUERY_ORDER = DB_QUERY_PREFIX + "order";
 	public static final String DB_QUERY_FILTERS = DB_QUERY_PREFIX + "filters";
@@ -62,7 +66,11 @@ public class RestTableQueries {
 		this.objectMapper = objectMapper;
 	}
 
-	public List<Map<String, Object>> insert(List<Map<String, Object>> records) {
+	public Map<String, Object> insert(Map<String, Object> record) {
+		return insert(Collections.singletonList(record));
+	}
+
+	public Map<String, Object> insert(List<Map<String, Object>> records) {
 
 		// There is no reliable way to get generated values back when using a
 		// batch-update.
@@ -83,7 +91,7 @@ public class RestTableQueries {
 			}
 			return null;
 		});
-		return records;
+		return Collections.singletonMap(DATA_KEY, records);
 	}
 
 	public String insertQuery(List<String> columns) {
@@ -122,6 +130,10 @@ public class RestTableQueries {
 		return (schema == null ? quote(tableName) : quote(schema) + "." + quote(tableName));
 	}
 
+	public String quote(String s) {
+		return '"' + s + '"';
+	}
+
 	/**
 	 * Verify column names to prevent sql-injection.
 	 */
@@ -145,15 +157,19 @@ public class RestTableQueries {
 		return columnNames;
 	}
 
-	public List<Map<String, Object>> selectAll() {
-		return select(null);
+	public Map<String, Object> selectAll() {
+		return select((List<Map<String, Object>>) null);
 	}
 
-	public List<Map<String, Object>> select(List<Map<String, Object>> records) {
+	public Map<String, Object> select(String column, Object value) {
+		return select(Collections.singletonList(Collections.singletonMap(column, value)), 0, maxAmountDefault);
+	}
+
+	public Map<String, Object> select(List<Map<String, Object>> records) {
 		return select(records, 0, maxAmountDefault);
 	}
 
-	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int amount) {
+	public Map<String, Object> select(List<Map<String, Object>> records, int offset, int amount) {
 
 		if (records == null) {
 			records = Collections.singletonList(Collections.emptyMap());
@@ -166,7 +182,7 @@ public class RestTableQueries {
 			var query = limit(selectQuery(params), offset, amount);
 			selected.addAll(namedJdbcTemplate.queryForList(query, params));
 		}
-		return selected;
+		return Collections.singletonMap(DATA_KEY, selected);
 	}
 
 	public String selectQuery(Map<String, Object> params) {
@@ -175,15 +191,33 @@ public class RestTableQueries {
 
 	public String selectQuery(Collection<String> selectionKeys, Map<String, Object> params) {
 
-		StringBuilder sb = new StringBuilder("select * from ");
+		StringBuilder sb = new StringBuilder("select ");
+		sb.append(selectColumns()).append(" from ");
 		sb.append(quotedTable()).append(where(selectionKeys, params));
 		return sb.toString();
 	}
 
-	public String quote(String s) {
-		return '"' + s + '"';
+	public String selectColumns() {
+		
+		StringBuilder sb = new StringBuilder(StringUtils.EMPTY);
+		// Using sorted columns does actually work:
+		// data-maps are shown with column-names sorted.
+		for(Iterator<String> it = sortedColumnNames().iterator(); it.hasNext();) {
+			sb.append(quote(it.next()));
+			if (it.hasNext()) {
+				sb.append(',');
+			}
+		}
+		return sb.toString();
 	}
 
+	public List<String> sortedColumnNames() {
+		
+		var cnList = new ArrayList<String>(columnNames);
+		Collections.sort(cnList, String.CASE_INSENSITIVE_ORDER);
+		return cnList;
+	}
+	
 	protected final String WHERE_SQL_START = " where ";
 
 	public String where(Collection<String> selectionKeys, Map<String, Object> params) {
@@ -301,6 +335,10 @@ public class RestTableQueries {
 		return query + " limit " + amount + " offset " + offset;
 	}
 
+	public int update(Map<String, Object> record) {
+		return update(Collections.singletonList(record), false);
+	}
+
 	public int update(List<Map<String, Object>> records) {
 		return update(records, false);
 	}
@@ -357,6 +395,10 @@ public class RestTableQueries {
 		return deletedRows;
 	}
 
+	public int delete(Map<String, Object> record) {
+		return delete(Collections.singletonList(record));
+	}
+
 	public int delete(List<Map<String, Object>> records) {
 
 		int deletedRows = transactionTemplate.execute((status) -> {
@@ -388,15 +430,19 @@ public class RestTableQueries {
 
 	public Map<String, Object> meta() {
 
-		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
-		// to re-use existing connection.
 		var meta = new LinkedHashMap<String, Object>();
-		meta.put("columnnames", columnNames);
+		meta.put("schema", schema);
+		meta.put("tablename", tableName);
+		meta.put("columnnames", sortedColumnNames());
 		meta.put("readonlycolumns", selectOnlyColumns);
 		meta.put("columndefaults", insertDefaults);
 		meta.put("timestampcolumns", timestampColumns);
 		String conSchema = null;
 		boolean conSchemaUpdated = false;
+
+		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
+		// to re-use existing connection.
+		
 		var ds = jdbcTemplate.getDataSource();
 		var con = DataSourceUtils.getConnection(ds);
 		try {
@@ -405,6 +451,7 @@ public class RestTableQueries {
 			if (schema != null && !schema.equals(conSchema)) {
 				con.setSchema(schema);
 				conSchemaUpdated = true;
+				log.debug("Updated connection schema to {}", schema);
 			}
 			meta.put("schema", schema);
 			var metaColumns = new LinkedList<Map<String, Object>>();
