@@ -48,11 +48,12 @@ public class TestTask {
 	@Test
 	public void testSelect() throws Exception {
 		
-		var t = restTemplate.getForObject("/db2rest", String.class);
-		var tdata = getData(mapper.readValue(t, Map.class));
+		var t = restTemplate.getForObject("/db2rest/text", String.class);
+		log.trace("db2rest text:\n{}", t);
+		assertTrue(t.contains("/task/select/{column}/{value} [GET] | type (default []) | offset (default [0]) | amount (default [0])"));
+
 		// most interesting to test is /task/select/{column}/{value}
 		// but to lazy to do it here.
-		assertTrue(tdata.size() > 0);
 		
 		var s = restTemplate.getForObject("/task", String.class);
 		log.debug("Response: {}", s);
@@ -67,13 +68,13 @@ public class TestTask {
 
 		var one = restTemplate.getForObject("/task/select/id/1", String.class);
 		log.debug("Response: {}", one);
-		var records = getData(mapper.readValue(one, Map.class));
+		var records = castListMap(mapper.readValue(one, List.class));
 		var desc = records.get(0).get("description");
 		assertTrue(desc.equals("mop the floor"));
 
 		var completed = restTemplate.getForObject("/task/select/completed/false?type=switch", String.class);
 		log.debug("Response: {}", completed);
-		records = getData(mapper.readValue(completed, Map.class));
+		records = castListMap(mapper.readValue(completed, List.class));
 		var id = records.get(0).get("id");
 		assertTrue( (int)id == 2);
 	}
@@ -91,11 +92,6 @@ public class TestTask {
 	@SuppressWarnings("unchecked")
 	List<Map<String, Object>> castListMap(Object o) {
 		return (List<Map<String, Object>>) o;
-	}
-	
-	@SuppressWarnings("unchecked")
-	List<Map<String, Object>> getData(Object o) {
-		return (List<Map<String, Object>>)((Map<String, Object>) o).get(RestTableQueries.DATA_KEY);
 	}
 	
 	@SpringBootConfiguration

@@ -1,4 +1,4 @@
-curl -sSi -H "Content-Type: application/json" http://localhost:8082/db2rest
+curl -sSi -H "Content-Type: application/json" http://localhost:8082/db2rest/text
 
 curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select/all
 

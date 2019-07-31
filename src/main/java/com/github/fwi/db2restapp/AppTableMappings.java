@@ -1,7 +1,6 @@
 package com.github.fwi.db2restapp;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -18,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.LocalVariableTableParameterNameDiscoverer;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,8 +25,6 @@ import org.springframework.web.bind.annotation.ValueConstants;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
-
-import com.github.fwi.db2rest.RestTableQueries;
 
 @RestController
 public class AppTableMappings {
@@ -37,9 +34,38 @@ public class AppTableMappings {
 
 	@Autowired
 	RequestMappingHandlerMapping requestMapper;
-
-	@RequestMapping("/db2rest")
-	public Map<String, Object> rest2dbMappings() {
+	
+	@GetMapping(value = "/db2rest/text", produces="text/plain")
+	public String rest2dbMappingsText() {
+		
+		var info = rest2dbMappings();
+		StringBuilder sb = new StringBuilder(StringUtils.EMPTY);
+		boolean first = true;
+		for (var s : info) {
+			if (first) {
+				first = false;
+			} else {
+				sb.append('\n');
+			}
+			sb.append(s.get("path")).append(' ').append(s.get("methods"));
+			if (s.get("params") != null) {
+				@SuppressWarnings("unchecked")
+				var params = (List<Map<String, Object>>) s.get("params");
+				for (var param : params) {
+					sb.append(" | ").append(param.get("value"));
+					if ((Boolean)param.get("required")) {
+						sb.append(" (required)");
+					} else {
+						sb.append(" (default [").append(param.get("default")).append("])");
+					}
+				}
+			}
+		}
+		return sb.toString();
+	}
+	
+	@GetMapping("/db2rest")
+	public List<Map<String, Object>> rest2dbMappings() {
 
 		var apiInfo = getApiInfo();
 		var pathApi = new HashMap<String, ApiInfo>();
@@ -63,7 +89,7 @@ public class AppTableMappings {
 			}
 			pathInfo.add(pathApiInfoMap);
 		}
-		return Collections.singletonMap(RestTableQueries.DATA_KEY, pathInfo);
+		return pathInfo;
 	}
 
 	final ParameterNameDiscoverer parameterNameDiscoverer = new LocalVariableTableParameterNameDiscoverer();

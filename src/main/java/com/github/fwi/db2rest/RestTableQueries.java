@@ -28,8 +28,6 @@ public class RestTableQueries {
 
 	private static final Logger log = LoggerFactory.getLogger(RestTableQueries.class);
 
-	public static final String DATA_KEY = "data";
-	
 	public static final String DB_QUERY_PREFIX = "rest2db_query_";
 	// public static final String DB_QUERY_ORDER = DB_QUERY_PREFIX + "order";
 	public static final String DB_QUERY_FILTERS = DB_QUERY_PREFIX + "filters";
@@ -66,11 +64,11 @@ public class RestTableQueries {
 		this.objectMapper = objectMapper;
 	}
 
-	public Map<String, Object> insert(Map<String, Object> record) {
+	public List<Map<String, Object>> insert(Map<String, Object> record) {
 		return insert(Collections.singletonList(record));
 	}
 
-	public Map<String, Object> insert(List<Map<String, Object>> records) {
+	public List<Map<String, Object>> insert(List<Map<String, Object>> records) {
 
 		// There is no reliable way to get generated values back when using a
 		// batch-update.
@@ -91,7 +89,7 @@ public class RestTableQueries {
 			}
 			return null;
 		});
-		return Collections.singletonMap(DATA_KEY, records);
+		return records;
 	}
 
 	public String insertQuery(List<String> columns) {
@@ -157,32 +155,33 @@ public class RestTableQueries {
 		return columnNames;
 	}
 
-	public Map<String, Object> selectAll() {
+	public List<Map<String, Object>> selectAll() {
 		return select((List<Map<String, Object>>) null);
 	}
 
-	public Map<String, Object> select(String column, Object value) {
-		return select(Collections.singletonList(Collections.singletonMap(column, value)), 0, maxAmountDefault);
+	public List<Map<String, Object>> select(String column, Object value) {
+		return select(column, value, 0, maxAmountDefault);
 	}
 
-	public Map<String, Object> select(List<Map<String, Object>> records) {
+	public List<Map<String, Object>> select(String column, Object value, int offset, int amount) {
+		return select(Collections.singletonList(Collections.singletonMap(column, value)), offset, amount);
+	}
+
+	public List<Map<String, Object>> select(List<Map<String, Object>> records) {
 		return select(records, 0, maxAmountDefault);
 	}
 
-	public Map<String, Object> select(List<Map<String, Object>> records, int offset, int amount) {
+	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int amount) {
 
 		if (records == null) {
 			records = Collections.singletonList(Collections.emptyMap());
 		}
-		if (amount <= 0) {
-			amount = maxAmountDefault;
-		}
 		var selected = new LinkedList<Map<String, Object>>();
 		for (var params : records) {
-			var query = limit(selectQuery(params), offset, amount);
+			var query = selectQuery(params) + limit(offset, amount);
 			selected.addAll(namedJdbcTemplate.queryForList(query, params));
 		}
-		return Collections.singletonMap(DATA_KEY, selected);
+		return selected;
 	}
 
 	public String selectQuery(Map<String, Object> params) {
@@ -198,11 +197,11 @@ public class RestTableQueries {
 	}
 
 	public String selectColumns() {
-		
+
 		StringBuilder sb = new StringBuilder(StringUtils.EMPTY);
 		// Using sorted columns does actually work:
 		// data-maps are shown with column-names sorted.
-		for(Iterator<String> it = sortedColumnNames().iterator(); it.hasNext();) {
+		for (Iterator<String> it = sortedColumnNames().iterator(); it.hasNext();) {
 			sb.append(quote(it.next()));
 			if (it.hasNext()) {
 				sb.append(',');
@@ -212,12 +211,12 @@ public class RestTableQueries {
 	}
 
 	public List<String> sortedColumnNames() {
-		
+
 		var cnList = new ArrayList<String>(columnNames);
 		Collections.sort(cnList, String.CASE_INSENSITIVE_ORDER);
 		return cnList;
 	}
-	
+
 	protected final String WHERE_SQL_START = " where ";
 
 	public String where(Collection<String> selectionKeys, Map<String, Object> params) {
@@ -329,10 +328,12 @@ public class RestTableQueries {
 		return sb.toString();
 	}
 
-	public String limit(String query, int offset, int amount) {
+	public String limit(int offset, int amount) {
 		// "limit 0,1000" does not work for postgres.
 		// use longer version "limit 1000 offset 0".
-		return query + " limit " + amount + " offset " + offset;
+		return " limit "
+			+ (amount <= 0 ? maxAmountDefault : amount)
+			+ " offset " + (offset < 0 ? 0 : offset);
 	}
 
 	public int update(Map<String, Object> record) {
@@ -406,7 +407,7 @@ public class RestTableQueries {
 			for (var params : records) {
 				if (params.isEmpty()) {
 					throw new BadRequestException(
-							"Selection to delete is required (no selection parameters provided).");
+						"Selection to delete is required (no selection parameters provided).");
 				}
 				var query = deleteQuery(params);
 				deleted += namedJdbcTemplate.update(query, params);
@@ -442,7 +443,7 @@ public class RestTableQueries {
 
 		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
 		// to re-use existing connection.
-		
+
 		var ds = jdbcTemplate.getDataSource();
 		var con = DataSourceUtils.getConnection(ds);
 		try {
