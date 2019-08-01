@@ -11,19 +11,23 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-public class RestTableRead extends RestTableInitializer {
+public class RestTableRead extends TableInitializer {
 
-	public RestTableRead(RestTableQueries tableQueries) {
+	public RestTableRead(TableQueries tableQueries) {
 		this(tableQueries, true);
 	}
 
-	public RestTableRead(RestTableQueries tableQueries, boolean queryColumnsAtStartup) {
+	public RestTableRead(TableQueries tableQueries, boolean queryColumnsAtStartup) {
 		super(tableQueries, queryColumnsAtStartup);
+	}
+
+	public String tableName() {
+		return tableQueries.meta.tableName();
 	}
 
 	@GetMapping("/meta")
 	public Map<String, Object> meta() {
-		return tableQueries.meta();
+		return tableQueries.metaData();
 	}
 
 	/*
@@ -48,30 +52,31 @@ public class RestTableRead extends RestTableInitializer {
 
 		return tableQueries.select(column, typedValue(type, value), offset, amount);
 	}
-	
+
 	@GetMapping("/select/one/{column}/{value}")
 	public Map<String, Object> findOne(
 		@PathVariable String column,
 		@PathVariable String value,
 		@RequestParam(value = "type", defaultValue = StringUtils.EMPTY) String type) {
-		
+
 		var records = selectFromOneColumn(column, value, type, 0, 2);
 		if (records.size() == 1) {
 			return records.get(0);
 		} else if (records.size() == 0) {
-			throw new NotFoundException("No record found in " + tableQueries.tableName + " for " + column + " " + value);
+			throw new NotFoundException("No record found in " + tableName() + " for " + column + " " + value);
 		} else {
-			throw new BadRequestException("Found more than one record in " + tableQueries.tableName + " for " + column + " " + value);
+			throw new BadRequestException(
+				"Found more than one record in " + tableName() + " for " + column + " " + value);
 		}
 	}
-	
+
 	@GetMapping("/select/all")
 	public List<Map<String, Object>> selectAll() {
 		return tableQueries.selectAll();
 	}
 
-	protected Object typedValue(String type, String value) {
-		
+	public Object typedValue(String type, String value) {
+
 		Object typedValue = value;
 		if (type != null && type.length() > 0) {
 			switch (type) {

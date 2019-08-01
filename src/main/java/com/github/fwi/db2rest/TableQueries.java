@@ -1,7 +1,6 @@
 package com.github.fwi.db2rest;
 
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,18 +14,13 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+public class TableQueries {
 
-public class RestTableQueries {
-
-	private static final Logger log = LoggerFactory.getLogger(RestTableQueries.class);
+	private static final Logger log = LoggerFactory.getLogger(TableQueries.class);
 
 	public static final String DB_QUERY_PREFIX = "rest2db_query_";
 	// public static final String DB_QUERY_ORDER = DB_QUERY_PREFIX + "order";
@@ -35,33 +29,12 @@ public class RestTableQueries {
 	public static final String FILTER_OP = "op";
 	public static final String FILTER_VALUE = "value";
 
-	public final String schema;
-	public final String tableName;
-	public final int maxAmountDefault;
-	public final Collection<String> columnNames;
-	public final Collection<String> selectOnlyColumns;
-	public final Collection<String> timestampColumns;
-	public final Map<String, Object> insertDefaults;
+	public final TableMetaInterface meta;
+	public final DbTemplatesInterface db;
 
-	public final JdbcTemplate jdbcTemplate;
-	public final NamedParameterJdbcTemplate namedJdbcTemplate;
-	public final TransactionTemplate transactionTemplate;
-
-	public final ObjectMapper objectMapper;
-
-	public RestTableQueries(RestTableMeta meta, RestDbResources db, ObjectMapper objectMapper) {
-		this.schema = meta.schema;
-		this.tableName = meta.tableName;
-		this.maxAmountDefault = meta.maxAmountDefault;
-		this.columnNames = meta.columnNames;
-		this.selectOnlyColumns = meta.selectOnlyColumns;
-		this.timestampColumns = meta.timestampColumns;
-		this.insertDefaults = meta.insertDefaults;
-
-		this.jdbcTemplate = db.jdbcTemplate;
-		this.namedJdbcTemplate = db.namedJdbcTemplate;
-		this.transactionTemplate = db.transactionTemplate;
-		this.objectMapper = objectMapper;
+	public TableQueries(TableMetaInterface meta, DbTemplatesInterface db) {
+		this.meta = meta;
+		this.db = db;
 	}
 
 	public List<Map<String, Object>> insert(Map<String, Object> record) {
@@ -74,15 +47,15 @@ public class RestTableQueries {
 		// batch-update.
 		// Use a transaction to ensure an "all or nothing" operation.
 
-		transactionTemplate.execute((status) -> {
+		db.transactionTemplate().execute((status) -> {
 			for (var params : records) {
-				for (var columnName : insertDefaults.keySet()) {
-					params.putIfAbsent(columnName, insertDefaults.get(columnName));
+				for (var columnName : meta.insertDefaults().keySet()) {
+					params.putIfAbsent(columnName, meta.insertDefaults().get(columnName));
 				}
 				var keyHolder = new GeneratedKeyHolder();
 				var sqlParams = new MapSqlParameterSource().addValues(params);
 				var query = insertQuery(new LinkedList<String>(params.keySet()));
-				namedJdbcTemplate.update(query, sqlParams, keyHolder);
+				db.namedJdbcTemplate().update(query, sqlParams, keyHolder);
 				if (keyHolder.getKeys() != null) {
 					params.putAll(keyHolder.getKeys());
 				}
@@ -102,7 +75,7 @@ public class RestTableQueries {
 		sb.append(quotedTable()).append(" (");
 		for (var it = columns.iterator(); it.hasNext();) {
 			var column = it.next();
-			if (selectOnlyColumns.contains(column)) {
+			if (meta.selectOnlyColumns().contains(column)) {
 				throw new BadRequestException("Cannot insert value for select-only column " + column + ".");
 			}
 			sb.append(quote(column));
@@ -125,7 +98,7 @@ public class RestTableQueries {
 	}
 
 	public String quotedTable() {
-		return (schema == null ? quote(tableName) : quote(schema) + "." + quote(tableName));
+		return (meta.schema() == null ? quote(meta.tableName()) : quote(meta.schema()) + "." + quote(meta.tableName()));
 	}
 
 	public String quote(String s) {
@@ -137,8 +110,8 @@ public class RestTableQueries {
 	 */
 	public String vcolumn(String columnName) {
 
-		if (!columnNames.contains(columnName)) {
-			throw new BadRequestException("Unknown column name [" + columnName + "] for table " + tableName);
+		if (!meta.columnNames().contains(columnName)) {
+			throw new BadRequestException("Unknown column name [" + columnName + "] for table " + meta.tableName());
 		}
 		return columnName;
 	}
@@ -148,8 +121,8 @@ public class RestTableQueries {
 	 */
 	public <T extends Collection<String>> T vcolumns(T columnNames) {
 
-		if (!this.columnNames.containsAll(columnNames)) {
-			columnNames.removeAll(this.columnNames);
+		if (!meta.columnNames().containsAll(columnNames)) {
+			columnNames.removeAll(meta.columnNames());
 			throw new BadRequestException("Unknown column name in collection " + columnNames);
 		}
 		return columnNames;
@@ -160,7 +133,7 @@ public class RestTableQueries {
 	}
 
 	public List<Map<String, Object>> select(String column, Object value) {
-		return select(column, value, 0, maxAmountDefault);
+		return select(column, value, 0, meta.maxAmountDefault());
 	}
 
 	public List<Map<String, Object>> select(String column, Object value, int offset, int amount) {
@@ -168,7 +141,7 @@ public class RestTableQueries {
 	}
 
 	public List<Map<String, Object>> select(List<Map<String, Object>> records) {
-		return select(records, 0, maxAmountDefault);
+		return select(records, 0, meta.maxAmountDefault());
 	}
 
 	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int amount) {
@@ -179,7 +152,7 @@ public class RestTableQueries {
 		var selected = new LinkedList<Map<String, Object>>();
 		for (var params : records) {
 			var query = selectQuery(params) + limit(offset, amount);
-			selected.addAll(namedJdbcTemplate.queryForList(query, params));
+			selected.addAll(db.namedJdbcTemplate().queryForList(query, params));
 		}
 		return selected;
 	}
@@ -212,7 +185,7 @@ public class RestTableQueries {
 
 	public List<String> sortedColumnNames() {
 
-		var cnList = new ArrayList<String>(columnNames);
+		var cnList = new ArrayList<String>(meta.columnNames());
 		Collections.sort(cnList, String.CASE_INSENSITIVE_ORDER);
 		return cnList;
 	}
@@ -253,27 +226,13 @@ public class RestTableQueries {
 				sb.append(" in ( :").append(column).append(')');
 			} else {
 				sb.append("= :").append(column);
-				if (timestampColumns.contains(column)) {
-					params.put(column, toTimestamp((String) params.get(column)));
+				if (meta.timestampColumns().contains(column)) {
+					params.put(column, meta.toTimestamp((String) params.get(column)));
 				}
 			}
 		}
 		String whereClause = sb.toString();
 		return (whereClause.equals(WHERE_SQL_START) ? StringUtils.EMPTY : whereClause);
-	}
-
-	public OffsetDateTime toTimestamp(String value) {
-
-		if (value == null) {
-			return null;
-		}
-		OffsetDateTime t = null;
-		try {
-			t = objectMapper.readValue(quote(value), OffsetDateTime.class);
-		} catch (Exception e) {
-			throw new BadRequestException("Invalid date format for value [" + value + "].", e);
-		}
-		return t;
 	}
 
 	public String whereFilters(Object filtersObject, Map<String, Object> params) {
@@ -301,8 +260,8 @@ public class RestTableQueries {
 			case "<":
 			case "<=":
 				sb.append(' ').append(op).append(" :").append(filterColumnName);
-				if (timestampColumns.contains(column)) {
-					params.put(filterColumnName, toTimestamp((String) params.get(filterColumnName)));
+				if (meta.timestampColumns().contains(column)) {
+					params.put(filterColumnName, meta.toTimestamp((String) params.get(filterColumnName)));
 				}
 				break;
 			case "in":
@@ -332,7 +291,7 @@ public class RestTableQueries {
 		// "limit 0,1000" does not work for postgres.
 		// use longer version "limit 1000 offset 0".
 		return " limit "
-			+ (amount <= 0 ? maxAmountDefault : amount)
+			+ (amount <= 0 ? meta.maxAmountDefault() : amount)
 			+ " offset " + (offset < 0 ? 0 : offset);
 	}
 
@@ -346,11 +305,11 @@ public class RestTableQueries {
 
 	public int update(List<Map<String, Object>> records, boolean allowUpdateAll) {
 
-		int updatedRows = transactionTemplate.execute((status) -> {
+		int updatedRows = db.transactionTemplate().execute((status) -> {
 			var updated = 0;
 			for (var params : records) {
 				var query = updateQuery(params, allowUpdateAll);
-				updated += namedJdbcTemplate.update(query, params);
+				updated += db.namedJdbcTemplate().update(query, params);
 			}
 			return updated;
 		});
@@ -365,7 +324,7 @@ public class RestTableQueries {
 		sb.append(quotedTable()).append(" set ");
 		boolean first = true;
 		for (var column : params.keySet()) {
-			if (selectOnlyColumns.contains(column) || column.startsWith(DB_QUERY_PREFIX)) {
+			if (meta.selectOnlyColumns().contains(column) || column.startsWith(DB_QUERY_PREFIX)) {
 				continue;
 			}
 			if (first) {
@@ -382,7 +341,7 @@ public class RestTableQueries {
 				sb.append(WHERE_SQL_START);
 			}
 		} else {
-			whereQuery = where(selectOnlyColumns, params);
+			whereQuery = where(meta.selectOnlyColumns(), params);
 		}
 		if (!allowUpdateAll && StringUtils.isBlank(whereQuery)) {
 			throw new BadRequestException("Update query requires selection values for a where-clause.");
@@ -392,7 +351,7 @@ public class RestTableQueries {
 	}
 
 	public int deleteAll() {
-		var deletedRows = jdbcTemplate.update("delete from " + quotedTable());
+		var deletedRows = db.jdbcTemplate().update("delete from " + quotedTable());
 		return deletedRows;
 	}
 
@@ -402,7 +361,7 @@ public class RestTableQueries {
 
 	public int delete(List<Map<String, Object>> records) {
 
-		int deletedRows = transactionTemplate.execute((status) -> {
+		int deletedRows = db.transactionTemplate().execute((status) -> {
 			var deleted = 0;
 			for (var params : records) {
 				if (params.isEmpty()) {
@@ -410,7 +369,7 @@ public class RestTableQueries {
 						"Selection to delete is required (no selection parameters provided).");
 				}
 				var query = deleteQuery(params);
-				deleted += namedJdbcTemplate.update(query, params);
+				deleted += db.namedJdbcTemplate().update(query, params);
 			}
 			return deleted;
 		});
@@ -429,37 +388,37 @@ public class RestTableQueries {
 		return sb.toString();
 	}
 
-	public Map<String, Object> meta() {
+	public Map<String, Object> metaData() {
 
-		var meta = new LinkedHashMap<String, Object>();
-		meta.put("schema", schema);
-		meta.put("tablename", tableName);
-		meta.put("columnnames", sortedColumnNames());
-		meta.put("readonlycolumns", selectOnlyColumns);
-		meta.put("columndefaults", insertDefaults);
-		meta.put("timestampcolumns", timestampColumns);
+		var metaData = new LinkedHashMap<String, Object>();
+		metaData.put("schema", meta.schema());
+		metaData.put("tablename", meta.tableName());
+		metaData.put("columnnames", sortedColumnNames());
+		metaData.put("readonlycolumns", meta.selectOnlyColumns());
+		metaData.put("columndefaults", meta.insertDefaults());
+		metaData.put("timestampcolumns", meta.timestampColumns());
 		String conSchema = null;
 		boolean conSchemaUpdated = false;
 
 		// Follow pattern from JdbcTemplate method execute(StatementCallback<T> action)
 		// to re-use existing connection.
 
-		var ds = jdbcTemplate.getDataSource();
+		var ds = db.jdbcTemplate().getDataSource();
 		var con = DataSourceUtils.getConnection(ds);
 		try {
-			meta.put("catalog", con.getCatalog());
+			metaData.put("catalog", con.getCatalog());
 			conSchema = con.getSchema();
-			if (schema != null && !schema.equals(conSchema)) {
-				con.setSchema(schema);
+			if (meta.schema() != null && !meta.schema().equals(conSchema)) {
+				con.setSchema(meta.schema());
 				conSchemaUpdated = true;
-				log.debug("Updated connection schema to {}", schema);
+				log.debug("Updated connection schema to {}", meta.schema());
 			}
-			meta.put("schema", schema);
+			metaData.put("schema", meta.schema());
 			var metaColumns = new LinkedList<Map<String, Object>>();
-			var metaData = con.getMetaData();
-			meta.put("username", metaData.getUserName());
-			meta.put("columns", metaColumns);
-			try (var columns = metaData.getColumns(null, schema, tableName, "%")) {
+			var conMetaData = con.getMetaData();
+			metaData.put("username", conMetaData.getUserName());
+			metaData.put("columns", metaColumns);
+			try (var columns = conMetaData.getColumns(null, meta.schema(), meta.tableName(), "%")) {
 				var rowMeta = columns.getMetaData();
 				while (columns.next()) {
 					var column = new HashMap<String, Object>();
@@ -476,12 +435,12 @@ public class RestTableQueries {
 				try {
 					con.setSchema(conSchema);
 				} catch (Exception e) {
-					log.warn("Failed to reset connection schema back from " + schema + " to " + conSchema);
+					log.warn("Failed to reset connection schema back from " + meta.schema() + " to " + conSchema);
 				}
 			}
 			DataSourceUtils.releaseConnection(con, ds);
 		}
-		return meta;
+		return metaData;
 	}
 
 }

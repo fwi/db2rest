@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 public class RestTableWrite extends RestTableRead {
 
-	public RestTableWrite(RestTableQueries tableQueries) {
+	public RestTableWrite(TableQueries tableQueries) {
 		this(tableQueries, true);
 	}
 
-	public RestTableWrite(RestTableQueries tableQueries, boolean queryColumnsAtStartup) {
+	public RestTableWrite(TableQueries tableQueries, boolean queryColumnsAtStartup) {
 		super(tableQueries, queryColumnsAtStartup);
 	}
 

@@ -9,18 +9,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
-public class RestTableInitializer implements InitializingBean {
+public class TableInitializer implements InitializingBean {
 
-	private static final Logger log = LoggerFactory.getLogger(RestTableInitializer.class);
+	private static final Logger log = LoggerFactory.getLogger(TableInitializer.class);
 
-	protected final RestTableQueries tableQueries;
+	protected final TableQueries tableQueries;
 	protected final boolean queryColumnsAtStartup;
 
-	public RestTableInitializer(RestTableQueries tableQueries) {
+	public TableInitializer(TableQueries tableQueries) {
 		this(tableQueries, true);
 	}
 
-	public RestTableInitializer(RestTableQueries tableQueries, boolean queryColumnsAtStartup) {
+	public TableInitializer(TableQueries tableQueries, boolean queryColumnsAtStartup) {
 		this.tableQueries = tableQueries;
 		this.queryColumnsAtStartup = queryColumnsAtStartup;
 	}
@@ -31,13 +31,13 @@ public class RestTableInitializer implements InitializingBean {
 		if (!queryColumnsAtStartup) {
 			return;
 		}
-		var columnNames = tableQueries.columnNames;
+		var columnNames = tableQueries.meta.columnNames();
 		var queryColumnNames = columnNames.isEmpty();
-		var timestampColumns = tableQueries.timestampColumns;
+		var timestampColumns = tableQueries.meta.timestampColumns();
 		var queryTimestamps = timestampColumns.isEmpty();
 		if (queryColumnNames || queryTimestamps) {
 			@SuppressWarnings("unchecked")
-			var columns = (List<Map<String, Object>>) tableQueries.meta().get("columns");
+			var columns = (List<Map<String, Object>>) tableQueries.metaData().get("columns");
 			for (var column : columns) {
 				// some databases return values in all uppercase, others in all lowercase.
 				column = upperCaseKeys(column);
@@ -50,22 +50,22 @@ public class RestTableInitializer implements InitializingBean {
 			}
 			if (queryColumnNames) {
 				if (columnNames.size() > 0) {
-					log.debug("Found {} columns for table {}. Columns: {}", columnNames.size(), tableQueries.quotedTable(),
-							columnNames);
+					log.debug("Found {} columns for table {}. Columns: {}", columnNames.size(),
+						tableQueries.quotedTable(),
+						columnNames);
 				} else {
 					throw new RuntimeException("Found no columns for table " + tableQueries.quotedTable());
 				}
 			}
 			if (queryTimestamps && timestampColumns.size() > 0) {
 				log.debug("Found {} timestamp columns for table {}. Columns: {}", timestampColumns.size(),
-						tableQueries.quotedTable(), timestampColumns);
+					tableQueries.quotedTable(), timestampColumns);
 			}
 		}
 	}
 
-	
-	public Map<String, Object> upperCaseKeys(Map <String, Object> m) {
-		
+	public Map<String, Object> upperCaseKeys(Map<String, Object> m) {
+
 		var mupper = new HashMap<String, Object>();
 		for (String key : m.keySet()) {
 			mupper.put(key.toUpperCase(Locale.US), m.get(key));

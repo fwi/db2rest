@@ -25,9 +25,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fwi.db2rest.RestDbResources;
-import com.github.fwi.db2rest.RestTableMeta;
-import com.github.fwi.db2rest.RestTableQueries;
+import com.github.fwi.db2rest.DbTemplates;
+import com.github.fwi.db2rest.TableMeta;
+import com.github.fwi.db2rest.TableQueries;
 import com.github.fwi.db2restapp.AppTableMappings;
 import com.github.fwi.db2restapp.TableTask;
 
@@ -40,25 +40,26 @@ public class TestTask {
 	final Logger log = LoggerFactory.getLogger(TestTask.class);
 
 	@Autowired
-	private TestRestTemplate restTemplate;
+	TestRestTemplate restTemplate;
 
 	@Autowired
-	private ObjectMapper mapper;
+	ObjectMapper mapper;
 
 	@Test
 	public void testSelect() throws Exception {
-		
+
 		var t = restTemplate.getForObject("/db2rest/text", String.class);
-		log.trace("db2rest text:\n{}", t);
-		assertTrue(t.contains("/task/select/{column}/{value} [GET] | type (default []) | offset (default [0]) | amount (default [0])"));
+		log.debug("db2rest text:\n{}", t);
+		assertTrue(t
+			.contains("/task/select/{column}/{value} [GET] (type default=[], offset default=[0], amount default=[0])"));
 
 		// most interesting to test is /task/select/{column}/{value}
 		// but to lazy to do it here.
-		
+
 		var s = restTemplate.getForObject("/task", String.class);
 		log.debug("Response: {}", s);
 		assertEquals(s, restTemplate.getForObject("/task/", String.class));
-		
+
 		var o = restTemplate.getForObject("/task/meta", String.class);
 		log.trace("Response: {}", o);
 		Map<String, Object> meta = castMap(mapper.readValue(o, Map.class));
@@ -76,9 +77,9 @@ public class TestTask {
 		log.debug("Response: {}", completed);
 		records = castListMap(mapper.readValue(completed, List.class));
 		var id = records.get(0).get("id");
-		assertTrue( (int)id == 2);
+		assertTrue((int) id == 2);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	Map<String, Object> castMap(Object o) {
 		return (Map<String, Object>) o;
@@ -93,30 +94,35 @@ public class TestTask {
 	List<Map<String, Object>> castListMap(Object o) {
 		return (List<Map<String, Object>>) o;
 	}
-	
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	static class TestTaskConfig {
-		
+
+		@Autowired
+		ObjectMapper mapper;
+
 		@Bean
-		public RestDbResources restDbResources(
-				JdbcTemplate jdbcTemplate, 
-				NamedParameterJdbcTemplate namedJdbcTemplate,
-				TransactionTemplate transactionTemplate) {
-			return new RestDbResources(jdbcTemplate, namedJdbcTemplate, transactionTemplate);
+		public DbTemplates dbTemplates(
+			JdbcTemplate jdbcTemplate,
+			NamedParameterJdbcTemplate namedJdbcTemplate,
+			TransactionTemplate transactionTemplate) {
+
+			return new DbTemplates(jdbcTemplate, namedJdbcTemplate, transactionTemplate);
 		}
 
 		@Bean
-		public TableTask tableTask(RestDbResources restDbResources, ObjectMapper objectMapper) {
-			
-			var tableMeta = RestTableMeta.builder("task")
-					.selectOnlyColumns("id", "created", "modified")
-					.insertDefault("completed", false)
-					.build();
+		public TableTask tableTask(DbTemplates dbTemplates) {
+
+			var tableMeta = TableMeta.builder("task", mapper)
+				.selectOnlyColumns("id", "created", "modified")
+				.insertDefault("completed", false)
+				.build();
+
 			return new TableTask(
-					new RestTableQueries(tableMeta, restDbResources, objectMapper));
+				new TableQueries(tableMeta, dbTemplates));
 		}
-		
+
 		@Bean
 		public AppTableMappings appTableMappings() {
 			return new AppTableMappings();

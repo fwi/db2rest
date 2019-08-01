@@ -34,10 +34,10 @@ public class AppTableMappings {
 
 	@Autowired
 	RequestMappingHandlerMapping requestMapper;
-	
-	@GetMapping(value = "/db2rest/text", produces="text/plain")
+
+	@GetMapping(value = "/db2rest/text", produces = "text/plain")
 	public String rest2dbMappingsText() {
-		
+
 		var info = rest2dbMappings();
 		StringBuilder sb = new StringBuilder(StringUtils.EMPTY);
 		boolean first = true;
@@ -51,19 +51,27 @@ public class AppTableMappings {
 			if (s.get("params") != null) {
 				@SuppressWarnings("unchecked")
 				var params = (List<Map<String, Object>>) s.get("params");
+				sb.append(" (");
+				first = true;
 				for (var param : params) {
-					sb.append(" | ").append(param.get("value"));
-					if ((Boolean)param.get("required")) {
-						sb.append(" (required)");
+					if (first) {
+						first = false;
 					} else {
-						sb.append(" (default [").append(param.get("default")).append("])");
+						sb.append(", ");
+					}
+					sb.append(param.get("value"));
+					if ((Boolean) param.get("required")) {
+						sb.append(" required");
+					} else {
+						sb.append(" default=[").append(param.get("default")).append("]");
 					}
 				}
+				sb.append(')');
 			}
 		}
 		return sb.toString();
 	}
-	
+
 	@GetMapping("/db2rest")
 	public List<Map<String, Object>> rest2dbMappings() {
 
@@ -120,10 +128,10 @@ public class AppTableMappings {
 			RequestParam requestParam = methodParam.getParameterAnnotation(RequestParam.class);
 			if (requestParam != null) {
 				String parameterName = getName(methodParam);
-				
+
 				// requestParam.required() always returns true, not sure why.
 				// If no default value is set, required is true.
-				
+
 				var defaultValue = requestParam.defaultValue();
 				var required = false;
 				if (ValueConstants.DEFAULT_NONE.equals(requestParam.defaultValue())) {
