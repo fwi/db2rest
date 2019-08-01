@@ -13,12 +13,12 @@ public class TableMeta implements TableMetaInterface {
 
 	private String schema;
 	private String tableName;
+	private ObjectMapper mapper;
+	private int maxAmountDefault;
 	private Collection<String> columnNames;
 	private Collection<String> selectOnlyColumns;
 	private Collection<String> timestampColumns;
 	private Map<String, Object> insertDefaults;
-	private int maxAmountDefault;
-	private ObjectMapper mapper;
 
 	public TableMeta() {
 	}
