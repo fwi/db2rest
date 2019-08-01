@@ -54,7 +54,7 @@ public class RestTableRead extends TableInitializer {
 	}
 
 	@GetMapping("/select/one/{column}/{value}")
-	public Map<String, Object> findOne(
+	public Map<String, Object> selectOne(
 		@PathVariable String column,
 		@PathVariable String value,
 		@RequestParam(value = "type", defaultValue = StringUtils.EMPTY) String type) {
