@@ -1,15 +1,17 @@
 ---
 server.port: 8082
 
+db2rest.taskdb.enabled: true
+
 spring.jackson.serialization.indent_output: true
 
-spring.datasource.platform: h2
+db2rest.datasource.task.platform: h2
 
 # h2 datasource is always intialized if schema-h2 is present
 # spring.datasource.initialization-mode: always
 
-spring.datasource.schema: classpath:schema-test-task-h2.sql
-spring.datasource.data: classpath:data-test-task-h2.sql
+db2rest.datasource.task.schema: classpath:schema-test-task-h2.sql
+db2rest.datasource.task.data: classpath:data-test-task-h2.sql
 
 # Don't match case for table- and column-names.
 # Enable query logs for transaction management
@@ -17,11 +19,11 @@ spring.datasource.data: classpath:data-test-task-h2.sql
 # and http://www.h2database.com/html/features.html#other_settings "Using the Trace Options"
 # Set level 1 to 5 (2 is info, 3 is debug).
 
-spring.datasource.url: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2' 
+db2rest.datasource.task.url: 'jdbc:h2:mem:test;database_to_upper=false;trace_level_system_out=2' 
 
 # Enable console at /h2-console
 spring.h2.console.enabled: true
 
 # Hikari config properties: https://github.com/brettwooldridge/HikariCP#configuration-knobs-baby
-spring.datasource.hikari.minimumIdle: 1
-spring.datasource.hikari.maximumPoolSize: 4
+db2rest.datasource.task.hikari.minimumIdle: 1
+db2rest.datasource.task.hikari.maximumPoolSize: 4

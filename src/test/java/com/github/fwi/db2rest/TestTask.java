@@ -11,18 +11,19 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fwi.db2rest.DbTemplates;
@@ -96,23 +97,16 @@ public class TestTask {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration
+	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class })
+	@Import({ TaskDbConfig.class })
 	static class TestTaskConfig {
 
 		@Autowired
 		ObjectMapper mapper;
 
 		@Bean
-		public DbTemplates dbTemplates(
-			JdbcTemplate jdbcTemplate,
-			NamedParameterJdbcTemplate namedJdbcTemplate,
-			TransactionTemplate transactionTemplate) {
-
-			return new DbTemplates(jdbcTemplate, namedJdbcTemplate, transactionTemplate);
-		}
-
-		@Bean
-		public TableTask tableTask(DbTemplates dbTemplates) {
+		@ConditionalOnBean(name = "task-dbtemplates")
+		public TableTask tableTask(@Qualifier("task-dbtemplates") DbTemplates dbTemplates) {
 
 			var tableMeta = TableMeta.builder("task", mapper)
 				.selectOnlyColumns("id", "created", "modified")

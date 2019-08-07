@@ -27,12 +27,15 @@
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
+		</dependency>
+
+		<dependency>
+			<!-- excluded from executable jar, see spring-boot-maven-plugin -->
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>
@@ -59,6 +62,13 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<layout>ZIP</layout>
+					<excludes>
+						<!-- h2 database driver is normally excluded from executable-jar when h2 is only used for testing -->
+						<exclude>
+							<groupId>com.h2database</groupId>
+							<artifactId>h2</artifactId>
+						</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 

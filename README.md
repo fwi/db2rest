@@ -13,7 +13,10 @@ for creating a simple, yet powerfull REST interface for your own application.
 
 The main benefit of sticking with plain JDBC instead of using Hibernate
 is that you can do weird, optimized and unique database operations 
-without jumping through hoops to get what you need.   
+without jumping through hoops to get what you need.
+Talking about "hoops": if multiple datasources (databases) are needed,
+take a look at [TaskDbConfig.java](./src/test/java/com/github/fwi/db2rest/TaskDbConfig.java)
+to see how this could be accomplished.
 
 Run this project from the project's root with the command:
 
