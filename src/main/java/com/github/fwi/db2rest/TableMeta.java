@@ -15,6 +15,7 @@ public class TableMeta implements TableMetaInterface {
 	private String tableName;
 	private ObjectMapper mapper;
 	private int maxAmountDefault;
+	private int maxAmountAbsolute;
 	private Collection<String> columnNames;
 	private Collection<String> selectOnlyColumns;
 	private Collection<String> timestampColumns;
@@ -56,6 +57,11 @@ public class TableMeta implements TableMetaInterface {
 	@Override
 	public int maxAmountDefault() {
 		return maxAmountDefault;
+	}
+
+	@Override
+	public int maxAmountAbsolute() {
+		return maxAmountAbsolute;
 	}
 
 	@Override
@@ -102,7 +108,8 @@ public class TableMeta implements TableMetaInterface {
 		public Collection<String> selectOnlyColumns = new HashSet<String>();
 		public Collection<String> timestampColumns = new HashSet<String>();
 		public Map<String, Object> insertDefaults = new HashMap<String, Object>();
-		public int maxAmountDefault = 1000;
+		public int maxAmountDefault = 1_000;
+		public int maxAmountAbsolute = 10_000;
 		public ObjectMapper mapper;
 
 		public Builder(String tableName) {
@@ -162,6 +169,16 @@ public class TableMeta implements TableMetaInterface {
 			this.mapper = mapper;
 			return this;
 		}
+		
+		public Builder maxAmountDefault(int maxAmountDefault) {
+			this.maxAmountDefault = maxAmountDefault;
+			return this;
+		}
+
+		public Builder maxAmountAbsolute(int maxAmountAbsolute) {
+			this.maxAmountAbsolute = maxAmountAbsolute;
+			return this;
+		}
 
 		public TableMeta build() {
 
@@ -170,6 +187,7 @@ public class TableMeta implements TableMetaInterface {
 			meta.tableName = tableName;
 			meta.mapper = mapper;
 			meta.maxAmountDefault = maxAmountDefault;
+			meta.maxAmountAbsolute = maxAmountAbsolute;
 			meta.columnNames = columnNames;
 			meta.selectOnlyColumns = selectOnlyColumns;
 			meta.timestampColumns = timestampColumns;

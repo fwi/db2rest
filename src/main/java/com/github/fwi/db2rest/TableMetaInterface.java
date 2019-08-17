@@ -20,9 +20,21 @@ public interface TableMetaInterface {
 
 	Map<String, Object> insertDefaults();
 
+	/**
+	 * Default amount (limit) of number of records to return.
+	 * Default 1 000.
+	 */
 	int maxAmountDefault();
+
+	/**
+	 * Absolute amount (limit) of number of records to return.
+	 * Default 10 000, use 0 to indicate no limit.
+	 * @return
+	 */
+	int maxAmountAbsolute();
 
 	ObjectMapper mapper();
 
 	OffsetDateTime toTimestamp(String value);
+
 }

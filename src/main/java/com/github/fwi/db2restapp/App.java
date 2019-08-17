@@ -3,10 +3,14 @@ package com.github.fwi.db2restapp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,6 +56,26 @@ public class App {
 	@Bean
 	public AppTableMappings appTableMappings() {
 		return new AppTableMappings();
+	}
+
+	@Bean
+	@ConditionalOnProperty(name = "db2rest.security.enabled", matchIfMissing = true)
+	public AppBasicAuth appBasicAuth() {
+		return new AppBasicAuth();
+	}
+
+	@Bean
+	@ConditionalOnBean(AppBasicAuth.class)
+	public HttpFirewall httpFirewall() {
+		
+		/*
+		 * Values often contains special characters, these need to be allowed.
+		 */
+		var firewall = new StrictHttpFirewall();
+		firewall.setAllowUrlEncodedPercent(true);
+		firewall.setAllowUrlEncodedPeriod(true);
+		firewall.setAllowUrlEncodedSlash(true);
+		return firewall;
 	}
 
 }

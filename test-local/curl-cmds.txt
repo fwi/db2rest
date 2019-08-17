@@ -2,6 +2,8 @@ curl -sSi -H "Content-Type: application/json" http://localhost:8082/db2rest/text
 
 curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select/all
 
+curl -sSi -H "Content-Type: application/json" http://localhost:8082/task/select/description/ilike/%25oo%25
+
 curl -sSi -d@insert.json -H "Content-Type: application/json" http://localhost:8082/task/insert
 
 curl -sSi -d@update.json -H "Content-Type: application/json" http://localhost:8082/task/update

@@ -4,6 +4,17 @@
 
 server.port: 8082
 
+# Following two properties go hand-in-hand.
+# To enable security, make following two properties comments.
+
+spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+db2rest.security.enabled: false
+db2rest.auth.basic.username: db2rest
+db2rest.auth.basic.password: db2rest
+
+spring.security.enabled: false
+db2rest.auth.basic.enabled: true
+
 spring.datasource.platform: h2
 # h2 datasource is always intialized if schema-h2 is present
 # spring.datasource.initialization-mode=always

@@ -17,6 +17,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -52,10 +53,7 @@ public class TestTask {
 		var t = restTemplate.getForObject("/db2rest/text", String.class);
 		log.debug("db2rest text:\n{}", t);
 		assertTrue(t
-			.contains("/task/select/{column}/{value} [GET] (type default=[], offset default=[0], amount default=[0])"));
-
-		// most interesting to test is /task/select/{column}/{value}
-		// but to lazy to do it here.
+			.contains("/task/select/{column}/{value} [GET] (valuetype default=[], offset default=[0], limit default=[0])"));
 
 		var s = restTemplate.getForObject("/task", String.class);
 		log.debug("Response: {}", s);
@@ -74,11 +72,20 @@ public class TestTask {
 		var desc = records.get(0).get("description");
 		assertTrue(desc.equals("mop the floor"));
 
-		var completed = restTemplate.getForObject("/task/select/completed/false?type=switch", String.class);
+		var completed = restTemplate.getForObject("/task/select/completed/false?valuetype=switch", String.class);
 		log.debug("Response: {}", completed);
 		records = castListMap(mapper.readValue(completed, List.class));
 		var id = records.get(0).get("id");
 		assertTrue((int) id == 2);
+
+		var filtered = restTemplate.getForObject("/task/select/description/like/%e ov%", String.class);
+		log.debug("Response: {}", filtered);
+		records = castListMap(mapper.readValue(filtered, List.class));
+		assertTrue(records.size() > 0);
+		for (var record : records) {
+			desc = record.get("description");
+			assertTrue(desc.toString().contains("e ov"));
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -97,7 +104,11 @@ public class TestTask {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class, DataSourceTransactionManagerAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = { 
+		DataSourceAutoConfiguration.class, 
+		DataSourceTransactionManagerAutoConfiguration.class,
+		SecurityAutoConfiguration.class
+	})
 	@Import({ TaskDbConfig.class })
 	static class TestTaskConfig {
 

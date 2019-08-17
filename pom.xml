@@ -24,6 +24,10 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 		<dependency>
@@ -32,7 +36,7 @@
 		</dependency>
 
 		<dependency>
-			<!-- excluded from executable jar, see spring-boot-maven-plugin -->
+			<!-- normally excluded from executable jar, see spring-boot-maven-plugin -->
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
@@ -64,10 +68,13 @@
 					<layout>ZIP</layout>
 					<excludes>
 						<!-- h2 database driver is normally excluded from executable-jar when h2 is only used for testing -->
+						<!-- But it is used for running "test-local" in our case. -->
+						<!-- 
 						<exclude>
 							<groupId>com.h2database</groupId>
 							<artifactId>h2</artifactId>
 						</exclude>
+						 -->
 					</excludes>
 				</configuration>
 			</plugin>

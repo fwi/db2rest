@@ -136,22 +136,35 @@ public class TableQueries {
 		return select(column, value, 0, meta.maxAmountDefault());
 	}
 
-	public List<Map<String, Object>> select(String column, Object value, int offset, int amount) {
-		return select(Collections.singletonList(Collections.singletonMap(column, value)), offset, amount);
+	public List<Map<String, Object>> select(String column, Object value, int offset, int limit) {
+		return select(Collections.singletonList(Collections.singletonMap(column, value)), offset, limit);
+	}
+
+	public List<Map<String, Object>> select(String column, String op, Object value, int offset, int limit) {
+		
+		var dbQuery = new HashMap<String, Object>();
+		dbQuery.put(FILTER_COLUMN, column);
+		dbQuery.put(FILTER_OP, op);
+		dbQuery.put(FILTER_VALUE, value);
+		// Must use modifiable map here since this map gets updated by the where-function.
+		// Cannot use Collections.singletonMap since that creates an unmodifiable map.
+		var dbQuerySelect = new HashMap<String, Object>();
+		dbQuerySelect.put(DB_QUERY_FILTERS, Collections.singletonList(dbQuery));
+		return select(Collections.singletonList(dbQuerySelect), offset, limit);
 	}
 
 	public List<Map<String, Object>> select(List<Map<String, Object>> records) {
 		return select(records, 0, meta.maxAmountDefault());
 	}
 
-	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int amount) {
+	public List<Map<String, Object>> select(List<Map<String, Object>> records, int offset, int limit) {
 
 		if (records == null) {
 			records = Collections.singletonList(Collections.emptyMap());
 		}
 		var selected = new LinkedList<Map<String, Object>>();
 		for (var params : records) {
-			var query = selectQuery(params) + limit(offset, amount);
+			var query = selectQuery(params) + limit(offset, limit);
 			selected.addAll(db.namedJdbcTemplate().queryForList(query, params));
 		}
 		return selected;
@@ -287,11 +300,15 @@ public class TableQueries {
 		return sb.toString();
 	}
 
-	public String limit(int offset, int amount) {
+	public String limit(int offset, int limit) {
+		
+		if (meta.maxAmountAbsolute() > 0 && limit > meta.maxAmountAbsolute()) {
+			throw new BadRequestException("Maximum amount of records to return (limit) is too large (" + limit + "), maximum is set at " + meta.maxAmountAbsolute());
+		}
 		// "limit 0,1000" does not work for postgres.
 		// use longer version "limit 1000 offset 0".
 		return " limit "
-			+ (amount <= 0 ? meta.maxAmountDefault() : amount)
+			+ (limit <= 0 ? meta.maxAmountDefault() : limit)
 			+ " offset " + (offset < 0 ? 0 : offset);
 	}
 

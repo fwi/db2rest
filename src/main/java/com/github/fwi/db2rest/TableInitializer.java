@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -44,7 +45,7 @@ public class TableInitializer implements InitializingBean {
 				if (queryColumnNames) {
 					columnNames.add((String) column.get("COLUMN_NAME"));
 				}
-				if (queryTimestamps && ((String) column.get("TYPE_NAME")).equalsIgnoreCase("TIMESTAMP")) {
+				if (queryTimestamps && isTimestampTypeColumn((String) column.get("TYPE_NAME"))) {
 					timestampColumns.add((String) column.get("COLUMN_NAME"));
 				}
 			}
@@ -63,12 +64,25 @@ public class TableInitializer implements InitializingBean {
 			}
 		}
 	}
+	
+	public boolean isTimestampTypeColumn(String typeName) {
+	
+		if (StringUtils.isBlank(typeName)) {
+			return false;
+		}
+		var tname = typeName.toLowerCase(Locale.ENGLISH);
+		// postgresql uses "timestamptz" for timestamp with timezone.
+		return "timestamp".equals(tname)
+			|| "timestamp without time zone".equals(tname)
+			|| "timestamptz".equals(tname)
+			|| "timestamp with time zone".equals(tname);
+	}
 
 	public Map<String, Object> upperCaseKeys(Map<String, Object> m) {
 
 		var mupper = new HashMap<String, Object>();
 		for (String key : m.keySet()) {
-			mupper.put(key.toUpperCase(Locale.US), m.get(key));
+			mupper.put(key.toUpperCase(Locale.ENGLISH), m.get(key));
 		}
 		return mupper;
 	}

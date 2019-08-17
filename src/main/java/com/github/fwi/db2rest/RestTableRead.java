@@ -37,29 +37,41 @@ public class RestTableRead extends TableInitializer {
 	public List<Map<String, Object>> select(
 		@RequestBody(required = false) List<Map<String, Object>> records,
 		@RequestParam(defaultValue = "0") int offset,
-		@RequestParam(defaultValue = "0") int amount) {
+		@RequestParam(defaultValue = "0") int limit) {
 
-		return tableQueries.select(records, offset, amount);
+		return tableQueries.select(records, offset, limit);
 	}
 
 	@GetMapping("/select/{column}/{value}")
 	public List<Map<String, Object>> selectFromOneColumn(
 		@PathVariable String column,
 		@PathVariable String value,
-		@RequestParam(value = "type", defaultValue = StringUtils.EMPTY) String type,
+		@RequestParam(value = "valuetype", defaultValue = StringUtils.EMPTY) String valuetype,
 		@RequestParam(defaultValue = "0") int offset,
-		@RequestParam(defaultValue = "0") int amount) {
+		@RequestParam(defaultValue = "0") int limit) {
 
-		return tableQueries.select(column, typedValue(type, value), offset, amount);
+		return tableQueries.select(column, typedValue(valuetype, value), offset, limit);
 	}
 
+	@GetMapping("/select/{column}/{op}/{value}")
+	public List<Map<String, Object>> selectFromOneColumn(
+		@PathVariable String column,
+		@PathVariable String op,
+		@PathVariable String value,
+		@RequestParam(value = "valuetype", defaultValue = StringUtils.EMPTY) String valuetype,
+		@RequestParam(defaultValue = "0") int offset,
+		@RequestParam(defaultValue = "0") int limit) {
+
+		return tableQueries.select(column, op, typedValue(valuetype, value), offset, limit);
+	}
+	
 	@GetMapping("/select/one/{column}/{value}")
 	public Map<String, Object> selectOne(
 		@PathVariable String column,
 		@PathVariable String value,
-		@RequestParam(value = "type", defaultValue = StringUtils.EMPTY) String type) {
+		@RequestParam(value = "valuetype", defaultValue = StringUtils.EMPTY) String valuetype) {
 
-		var records = selectFromOneColumn(column, value, type, 0, 2);
+		var records = selectFromOneColumn(column, value, valuetype, 0, 2);
 		if (records.size() == 1) {
 			return records.get(0);
 		} else if (records.size() == 0) {
@@ -74,8 +86,24 @@ public class RestTableRead extends TableInitializer {
 	public List<Map<String, Object>> selectAll() {
 		return tableQueries.selectAll();
 	}
-
+	
+	/**
+	 * Calls {@link #toTypedValue(String, String)} to convert value to a value of correct class.
+	 */
 	public Object typedValue(String type, String value) {
+		return toTypedValue(type, value);
+	}
+
+	/**
+	 * Default implementation for {@link #typedValue(String, String)} which tries
+	 * to set a correct class-type for the value (Boolean, Long or String).
+	 * Boolean (or "switch") conversion follows the rules of {@link Boolean#valueOf(String)},
+	 * number conversion follows the rules of {@link Long#valueOf(String)}.
+	 * @param type if empty, value class-type is guessed else "text", "number" or "switch".
+	 * @param value the value to examine.
+	 * @return The value converted to correct class-type.
+	 */
+	public static Object toTypedValue(String type, String value) {
 
 		Object typedValue = value;
 		if (type != null && type.length() > 0) {

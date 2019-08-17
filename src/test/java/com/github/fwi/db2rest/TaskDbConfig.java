@@ -28,7 +28,7 @@ import com.zaxxer.hikari.HikariDataSource;
  * If datasource-autoconfiguration is required, mark at least one datasource as @Primary.
  */
 @Configuration
-@ConditionalOnProperty(name = "db2rest.taskdb.enabled")
+@ConditionalOnProperty("db2rest.taskdb.enabled")
 public class TaskDbConfig {
 	
 	@Bean("task-dbtemplates")
