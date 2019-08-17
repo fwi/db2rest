@@ -1,5 +1,10 @@
 package com.github.fwi.db2restapp;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.ServletContext;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -7,6 +12,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.web.firewall.HttpFirewall;
@@ -18,8 +24,16 @@ import com.github.fwi.db2rest.DbTemplates;
 import com.github.fwi.db2rest.TableMeta;
 import com.github.fwi.db2rest.TableQueries;
 
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.paths.RelativePathProvider;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger.web.SwaggerResource;
+import springfox.documentation.swagger.web.SwaggerResourcesProvider;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
 @Configuration
 @EnableAutoConfiguration
+@EnableSwagger2
 public class App {
 
 	public static void main(String[] args) {
@@ -76,6 +90,33 @@ public class App {
 		firewall.setAllowUrlEncodedPeriod(true);
 		firewall.setAllowUrlEncodedSlash(true);
 		return firewall;
+	}
+	
+	@Primary
+    @Bean
+    public SwaggerResourcesProvider swaggerResourcesProvider() {
+        return () -> {
+            SwaggerResource wsResource = new SwaggerResource();
+            wsResource.setName("db2rest spec");
+            wsResource.setSwaggerVersion("2.0");
+            wsResource.setLocation("/swagger.yaml");
+
+            List<SwaggerResource> resources = new ArrayList<>();
+            resources.add(wsResource);
+            return resources;
+        };
+    }
+	
+	@Bean
+	public Docket apiDocs(ServletContext servletContext) {
+		return new Docket(DocumentationType.SWAGGER_2)
+			.host("localhost")
+			.pathProvider(new RelativePathProvider(servletContext) {
+                @Override
+                public String getApplicationBasePath() {
+                    return "/";
+                }
+            }).enable(false);
 	}
 
 }

@@ -1,0 +1,92 @@
+---
+openapi: 3.0.0
+info:
+  title: Db2rest API
+  description: Database 2 REST API 
+  version: 1.0.0-DRAFT
+
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  '/task/select':
+    summary: List of tasks
+    parameters:
+    - $ref: '#/components/parameters/offset'
+    - $ref: '#/components/parameters/limit'
+    get:
+      tags:
+      - Task
+      responses:
+        '200':
+          $ref: '#/components/reponses/TaskArrayOK'
+    post:
+      tags:
+      - Task
+      requestBody:
+        description: Selection in query form
+        required: false
+        content:
+          application/json:
+            schema:
+              type: array
+              additionalProperties: true
+              example:
+              -
+                id:
+                - 2
+                - 3
+      responses:
+        '200':
+          $ref: '#/components/reponses/TaskArrayOK'
+
+components:
+  parameters:
+    offset:
+      in: query
+      name: offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    limit:
+      in: query
+      name: limit
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 10000
+        default: 1000
+  reponses:
+    TaskArrayOK:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskArray'
+  schemas:
+    TaskArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Task'
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+        modified:
+          type: string
+          format: date-time
+        description:
+          type: string
+        completed:
+          type: boolean
+          

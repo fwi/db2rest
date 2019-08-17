@@ -29,6 +29,10 @@ In your browser go to
 - http://localhost:8082/task/time
 - http://localhost:8082/task/meta
 - http://localhost:8082/task/select/all
+- http://localhost:8082/swagger-ui.html
+
+The swagger-ui is incomplete, partial definition is in [swagger.yaml](./src/main/resources/static/swagger.yaml)
+(following OpenAPI 3.0 [specification](https://swagger.io/docs/specification)).
 
 For reference the demo-table "task":
 
