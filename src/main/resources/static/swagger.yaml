@@ -6,41 +6,87 @@ info:
   version: 1.0.0-DRAFT
 
 consumes:
-  - application/json
+- application/json
 produces:
-  - application/json
+- application/json
+  
+path-anchors:
+- &limitparam
+  parameters:
+  - $ref: '#/components/parameters/offset'
+  - $ref: '#/components/parameters/limit'
+- &valueparam
+  parameters: # YAML anchors do not allow merging of lists.
+  - $ref: '#/components/parameters/taskcolumn'
+  - $ref: '#/components/parameters/value'
+  - $ref: '#/components/parameters/valuetype'
+  - $ref: '#/components/parameters/offset'
+  - $ref: '#/components/parameters/limit'
+- &valueopparam
+  parameters:
+  - $ref: '#/components/parameters/taskcolumn'
+  - $ref: '#/components/parameters/op'
+  - $ref: '#/components/parameters/value'
+  - $ref: '#/components/parameters/valuetype'
+  - $ref: '#/components/parameters/offset'
+  - $ref: '#/components/parameters/limit'
+- &tasktag
+  tags:
+  - task
+- &responsetaskarray
+  '200':
+    $ref: '#/components/reponses/TaskArrayOK'
+- &taskget
+  <<: *tasktag
+  responses:
+    <<: *responsetaskarray
+- &taskgetone
+  <<: *tasktag
+  responses:
+    <<: *responsetaskarray
+    '400':
+      description: More than one task found
+    '404':
+      description: Task not found
+- &reqselect
+  requestBody:
+    description: Selection in query form
+    required: false
+    content:
+      application/json:
+        schema:
+          type: array
+          additionalProperties: true
+          example:
+          -
+            id:
+            - 2
+            - 3
 
 paths:
   '/task/select':
     summary: List of tasks
-    parameters:
-    - $ref: '#/components/parameters/offset'
-    - $ref: '#/components/parameters/limit'
+    <<: *limitparam
     get:
-      tags:
-      - Task
-      responses:
-        '200':
-          $ref: '#/components/reponses/TaskArrayOK'
+      <<: *taskget
     post:
-      tags:
-      - Task
-      requestBody:
-        description: Selection in query form
-        required: false
-        content:
-          application/json:
-            schema:
-              type: array
-              additionalProperties: true
-              example:
-              -
-                id:
-                - 2
-                - 3
-      responses:
-        '200':
-          $ref: '#/components/reponses/TaskArrayOK'
+      <<: *taskget
+      <<: *reqselect
+  '/task/select/{column}/{value}':
+    summary: List of tasks filtered by column value 
+    <<: *valueparam
+    get:
+      <<: *taskget
+  '/task/select/one/{column}/{value}':
+    summary: One task filtered by column value 
+    <<: *valueparam
+    get:
+      <<: *taskgetone
+  '/task/select/{column}/{op}/{value}':
+    summary: List of tasks filtered by column value and operation
+    <<: *valueopparam
+    get:
+      <<: *taskget
 
 components:
   parameters:
@@ -61,6 +107,33 @@ components:
         minimum: 0
         maximum: 10000
         default: 1000
+    valuetype:
+      in: query
+      name: valuetype
+      required: false
+      schema:
+        type: string
+        enum: [text, number, switch]
+    taskcolumn:
+      in: path
+      name: column
+      required: true
+      schema:
+        type: string
+        enum: [id, created, modified, description, completed]
+    value:
+      in: path
+      name: value
+      required: true
+      schema:
+        AnyValue: {}
+    op:
+      in: path
+      name: op
+      required: true
+      schema:
+        type: string
+        enum: ['=', 'like', 'ilike', '>', '>=', '<', '<=', 'is null', 'is not null', 'in']
   reponses:
     TaskArrayOK:
       description: OK
