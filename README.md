@@ -18,10 +18,14 @@ Talking about "hoops": if multiple datasources (databases) are needed,
 take a look at [TaskDbConfig.java](./src/test/java/com/github/fwi/db2rest/TaskDbConfig.java)
 to see how this could be accomplished.
 
+An alternative with ORM-like functions that use only plain JDBC is provided in package `com.github.fwi.lorm2rest`. 
+The lightweight ORM implementation uses SimpleFlatMapper to map JDBC query results to POJOs.
+There are limits to this alternative implementation but it has functions not found in `db2rest`.  
+
 Run this project from the project's root with the command:
 
 	# Enable Java 11 in your environment, e.g. "set JAVA_HOME=c:\java\jdk11"
-	mvn -B -q spring-boot:run -Dspring.config.location=file:./test-local/
+	mvn -B -q spring-boot:run -Dspring-boot.run.fork=false -Dspring.config.location=file:./test-local/
 
 In your browser go to
 
@@ -29,10 +33,12 @@ In your browser go to
 - http://localhost:8082/task/time
 - http://localhost:8082/task/meta
 - http://localhost:8082/task/select/all
+- http://localhost:8082/repo/task/groups
 - http://localhost:8082/swagger-ui.html
 
 The swagger-ui is incomplete, partial definition is in [swagger.yaml](./src/main/resources/static/swagger.yaml)
-(following OpenAPI 3.0 [specification](https://swagger.io/docs/specification)).
+(following OpenAPI 3.0 [specification](https://swagger.io/docs/specification)). The swagger-ui does not escape the `%` sign,
+use `%25` instead to search with a wildcard (e.g. on column `description` with op `ilike` and value `%25oo%25`).
 
 For reference the demo-table "task":
 

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fwi.db2rest.DbTemplates;
 import com.github.fwi.db2rest.TableMeta;
 import com.github.fwi.db2rest.TableQueries;
+import com.github.fwi.lorm2rest.TaskRepo;
 
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.paths.RelativePathProvider;
@@ -60,11 +61,16 @@ public class App {
 			.selectOnlyColumns("id", "created", "modified")
 			// an insert without the "completed" column gets this default value 
 			.insertDefault("completed", false)
-			// timestamp-columns are auto-discovered in RestTable.afterPropertiesSet()
+			// timestamp-columns are auto-discovered in TableInitializer.afterPropertiesSet()
 			// .timestampColumns("created", "modified")
 			.build();
 		return new TableTask(
 			new TableQueries(tableMeta, dbTemplates));
+	}
+
+	@Bean
+	public TaskRepo taskRepoRestApi(DbTemplates dbTemplates) {
+		return new TaskRepo(dbTemplates);
 	}
 
 	@Bean
