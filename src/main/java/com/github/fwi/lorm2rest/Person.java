@@ -2,6 +2,10 @@ package com.github.fwi.lorm2rest;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+@JsonInclude(Include.NON_NULL)
 public class Person {
 
 	private long id;
