@@ -27,9 +27,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fwi.db2rest.DbTemplates;
-import com.github.fwi.db2rest.TableMeta;
-import com.github.fwi.db2rest.TableQueries;
 import com.github.fwi.db2restapp.AppTableMappings;
 import com.github.fwi.db2restapp.TableTask;
 
